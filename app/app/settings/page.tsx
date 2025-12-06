@@ -1,12 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Title, Paper, Stack, Button, Text } from '@mantine/core';
-import { DateInput } from '@mantine/dates';
+import { Title, Paper, Stack, Button, Text, TextInput } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 
 export default function SettingsPage() {
-  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [startDate, setStartDate] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -20,7 +19,7 @@ export default function SettingsPage() {
       const response = await fetch('/api/settings');
       const data = await response.json();
       if (data.tracking_start_date) {
-        setStartDate(new Date(data.tracking_start_date));
+        setStartDate(data.tracking_start_date);
       }
     } catch (error) {
       console.error('Error loading settings:', error);
@@ -36,7 +35,7 @@ export default function SettingsPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          tracking_start_date: startDate?.toISOString().split('T')[0],
+          tracking_start_date: startDate || null,
         }),
       });
 
@@ -71,13 +70,14 @@ export default function SettingsPage() {
             Set the date when you started tracking your habits. This helps
             calculate accurate statistics.
           </Text>
-          <DateInput
+          <TextInput
             label="Start Date"
-            placeholder="Pick a date"
+            placeholder="YYYY-MM-DD"
+            type="date"
             value={startDate}
-            onChange={(value: Date | null) => setStartDate(value)}
+            onChange={(e) => setStartDate(e.currentTarget.value)}
             disabled={loading}
-            maxDate={new Date()}
+            max={new Date().toISOString().split('T')[0]}
           />
           <Button onClick={handleSave} loading={saving} disabled={loading}>
             Save Settings
