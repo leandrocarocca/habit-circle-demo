@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Title, Paper, Stack, Group, ActionIcon, Text, SimpleGrid, Box } from '@mantine/core';
 import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 
@@ -15,6 +16,7 @@ interface CalendarData {
 }
 
 export default function CalendarPage() {
+  const router = useRouter();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [calendarData, setCalendarData] = useState<CalendarData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -100,16 +102,23 @@ export default function CalendarPage() {
     return '#ffffff';
   };
 
+  const handleDayClick = (dateStr: string) => {
+    router.push(`/app/logging?date=${dateStr}`);
+  };
+
   const renderCalendar = () => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
     const daysInMonth = lastDay.getDate();
-    const startingDayOfWeek = firstDay.getDay(); // 0 = Sunday
+    let startingDayOfWeek = firstDay.getDay(); // 0 = Sunday
+
+    // Convert to Monday-based (0 = Monday, 6 = Sunday)
+    startingDayOfWeek = startingDayOfWeek === 0 ? 6 : startingDayOfWeek - 1;
 
     const days = [];
-    const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
     // Add weekday headers
     weekDays.forEach((day) => {
@@ -136,6 +145,7 @@ export default function CalendarPage() {
           key={dateStr}
           p="md"
           withBorder
+          onClick={() => handleDayClick(dateStr)}
           style={{
             backgroundColor: bgColor,
             aspectRatio: '1',
@@ -144,6 +154,7 @@ export default function CalendarPage() {
             justifyContent: 'center',
             alignItems: 'center',
             minHeight: '60px',
+            cursor: 'pointer',
           }}
         >
           <Text size="lg" fw={500}>

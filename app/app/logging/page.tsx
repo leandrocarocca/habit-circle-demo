@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   Title,
   Text,
@@ -64,6 +65,16 @@ export default function LoggingPage() {
       return fullDate;
     }
   };
+
+  // Handle date parameter from URL
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const dateParam = searchParams.get('date');
+    if (dateParam) {
+      setCurrentDate(new Date(dateParam));
+    }
+  }, [searchParams]);
 
   // Load log for current date
   useEffect(() => {
