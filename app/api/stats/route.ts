@@ -18,11 +18,12 @@ export async function GET() {
     );
     const trackingStartDate = userResult.rows[0]?.tracking_start_date;
 
-    // Get total points (only after start date)
+    // Get total points (only after start date and only from completed days)
     const totalResult = await pool.query(
       `SELECT COALESCE(SUM(points), 0) as total_points
        FROM daily_logs
        WHERE user_id = $1
+       AND is_completed = true
        AND ($2::date IS NULL OR log_date >= $2)`,
       [session.user.id, trackingStartDate]
     );
@@ -47,6 +48,7 @@ export async function GET() {
               WHERE user_id = $1
               AND log_date = CURRENT_DATE
               AND logged_food = true
+              AND is_completed = true
             ) THEN 1
             ELSE 0
           END as streak
@@ -60,6 +62,7 @@ export async function GET() {
           WHERE user_id = $1
           AND log_date = check_date - 1
           AND logged_food = true
+          AND is_completed = true
         )
         AND streak > 0
         AND streak < 1000
@@ -89,6 +92,7 @@ export async function GET() {
               WHERE user_id = $1
               AND log_date = CURRENT_DATE
               AND within_calorie_limit = true
+              AND is_completed = true
             ) THEN 1
             ELSE 0
           END as streak
@@ -102,6 +106,7 @@ export async function GET() {
           WHERE user_id = $1
           AND log_date = check_date - 1
           AND within_calorie_limit = true
+          AND is_completed = true
         )
         AND streak > 0
         AND streak < 1000
@@ -131,6 +136,7 @@ export async function GET() {
               WHERE user_id = $1
               AND log_date = CURRENT_DATE
               AND protein_goal_met = true
+              AND is_completed = true
             ) THEN 1
             ELSE 0
           END as streak
@@ -144,6 +150,7 @@ export async function GET() {
           WHERE user_id = $1
           AND log_date = check_date - 1
           AND protein_goal_met = true
+          AND is_completed = true
         )
         AND streak > 0
         AND streak < 1000
