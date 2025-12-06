@@ -129,6 +129,15 @@ export default function LoggingPage() {
     });
   };
 
+  const handleUncomplete = () => {
+    saveLog({ is_completed: false });
+    notifications.show({
+      title: 'Success',
+      message: 'Day marked as incomplete',
+      color: 'blue',
+    });
+  };
+
   const goToPreviousDay = () => {
     const newDate = new Date(currentDate);
     newDate.setDate(newDate.getDate() - 1);
@@ -222,9 +231,21 @@ export default function LoggingPage() {
         </Stack>
 
         {log.is_completed ? (
-          <Text c="green" mt="md" fw={500}>
-            ✓ Day completed!
-          </Text>
+          <Stack gap="xs" mt="md">
+            <Text c="green" fw={500}>
+              ✓ Day completed!
+            </Text>
+            <Button
+              onClick={handleUncomplete}
+              fullWidth
+              variant="light"
+              color="gray"
+              loading={saving}
+              disabled={loading}
+            >
+              Mark as Incomplete
+            </Button>
+          </Stack>
         ) : (
           <Button
             onClick={handleMarkComplete}
