@@ -280,45 +280,47 @@ export default function GroupsPage() {
             You are not a member of any groups yet. Create one or wait for an invitation!
           </Text>
         ) : (
-          <Table>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>Group Name</Table.Th>
-                <Table.Th>Start Date</Table.Th>
-                <Table.Th>Members</Table.Th>
-                <Table.Th>Actions</Table.Th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {groups.map((group) => (
-                <Table.Tr key={group.id}>
-                  <Table.Td>{group.name}</Table.Td>
-                  <Table.Td>{new Date(group.tracking_start_date).toLocaleDateString()}</Table.Td>
-                  <Table.Td>
-                    <Badge size="sm" leftSection={<IconUsers size={12} />}>
-                      {group.member_count}
-                    </Badge>
-                  </Table.Td>
-                  <Table.Td>
-                    <Group gap="xs">
-                      <Button size="xs" variant="light" onClick={() => handleViewMembers(group.id)}>
-                        View Members
-                      </Button>
-                      <Button
-                        size="xs"
-                        onClick={() => {
-                          setSelectedGroup(group.id);
-                          setInviteModalOpen(true);
-                        }}
-                      >
-                        Invite
-                      </Button>
-                    </Group>
-                  </Table.Td>
+          <div style={{ overflowX: 'auto' }}>
+            <Table>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>Group Name</Table.Th>
+                  <Table.Th>Start Date</Table.Th>
+                  <Table.Th>Members</Table.Th>
+                  <Table.Th>Actions</Table.Th>
                 </Table.Tr>
-              ))}
-            </Table.Tbody>
-          </Table>
+              </Table.Thead>
+              <Table.Tbody>
+                {groups.map((group) => (
+                  <Table.Tr key={group.id}>
+                    <Table.Td>{group.name}</Table.Td>
+                    <Table.Td>{new Date(group.tracking_start_date).toLocaleDateString()}</Table.Td>
+                    <Table.Td>
+                      <Badge size="sm" leftSection={<IconUsers size={12} />}>
+                        {group.member_count}
+                      </Badge>
+                    </Table.Td>
+                    <Table.Td>
+                      <Group gap="xs">
+                        <Button size="xs" variant="light" onClick={() => handleViewMembers(group.id)}>
+                          View
+                        </Button>
+                        <Button
+                          size="xs"
+                          onClick={() => {
+                            setSelectedGroup(group.id);
+                            setInviteModalOpen(true);
+                          }}
+                        >
+                          Invite
+                        </Button>
+                      </Group>
+                    </Table.Td>
+                  </Table.Tr>
+                ))}
+              </Table.Tbody>
+            </Table>
+          </div>
         )}
       </Paper>
 
@@ -375,24 +377,26 @@ export default function GroupsPage() {
         title="Group Members"
         size="lg"
       >
-        <Table>
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th>Name</Table.Th>
-              <Table.Th>Email</Table.Th>
-              <Table.Th>Joined</Table.Th>
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {members.map((member) => (
-              <Table.Tr key={member.id}>
-                <Table.Td>{member.name}</Table.Td>
-                <Table.Td>{member.email}</Table.Td>
-                <Table.Td>{new Date(member.joined_at).toLocaleDateString()}</Table.Td>
+        <div style={{ overflowX: 'auto' }}>
+          <Table>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>Name</Table.Th>
+                <Table.Th>Email</Table.Th>
+                <Table.Th>Joined</Table.Th>
               </Table.Tr>
-            ))}
-          </Table.Tbody>
-        </Table>
+            </Table.Thead>
+            <Table.Tbody>
+              {members.map((member) => (
+                <Table.Tr key={member.id}>
+                  <Table.Td>{member.name}</Table.Td>
+                  <Table.Td>{member.email}</Table.Td>
+                  <Table.Td>{new Date(member.joined_at).toLocaleDateString()}</Table.Td>
+                </Table.Tr>
+              ))}
+            </Table.Tbody>
+          </Table>
+        </div>
       </Modal>
     </Stack>
   );

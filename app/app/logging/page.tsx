@@ -259,42 +259,42 @@ export default function LoggingPage() {
 
   return (
     <Stack gap="lg">
-      <Group justify="space-between" align="center">
-        <Title order={2}>Daily Logging</Title>
-        <Group>
-          {groups.length > 0 && (
-            <>
-              <Select
-                placeholder="Select group"
-                value={selectedGroup}
-                onChange={setSelectedGroup}
-                data={groups.map((g) => ({
-                  value: g.id.toString(),
-                  label: g.name,
-                }))}
-                style={{ width: 200 }}
-              />
-              {members.length > 0 && (
-                <Select
-                  placeholder="Select member"
-                  value={selectedUser}
-                  onChange={setSelectedUser}
-                  data={members.map((m) => ({
-                    value: m.id.toString(),
-                    label: m.name || m.email,
-                  }))}
-                  style={{ width: 200 }}
-                />
-              )}
-            </>
-          )}
+      <Stack gap="sm">
+        <Group justify="space-between" align="center">
+          <Title order={2}>Daily Logging</Title>
           {!isToday && (
-            <Button onClick={goToToday} variant="light">
-              Go to Today
+            <Button onClick={goToToday} variant="light" size="compact-sm">
+              Today
             </Button>
           )}
         </Group>
-      </Group>
+        {groups.length > 0 && (
+          <Stack gap="xs">
+            <Select
+              placeholder="Select group"
+              value={selectedGroup}
+              onChange={setSelectedGroup}
+              data={groups.map((g) => ({
+                value: g.id.toString(),
+                label: g.name,
+              }))}
+              style={{ width: '100%' }}
+            />
+            {members.length > 0 && (
+              <Select
+                placeholder="Select member"
+                value={selectedUser}
+                onChange={setSelectedUser}
+                data={members.map((m) => ({
+                  value: m.id.toString(),
+                  label: m.name || m.email,
+                }))}
+                style={{ width: '100%' }}
+              />
+            )}
+          </Stack>
+        )}
+      </Stack>
 
       {isViewingOtherUser && selectedMember && (
         <Paper p="sm" withBorder style={{ backgroundColor: '#f0f7ff' }}>

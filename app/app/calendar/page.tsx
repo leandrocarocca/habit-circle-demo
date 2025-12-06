@@ -216,7 +216,7 @@ export default function CalendarPage() {
       days.push(
         <Paper
           key={dateStr}
-          p="md"
+          p="xs"
           withBorder
           onClick={() => handleDayClick(dateStr)}
           style={{
@@ -226,15 +226,15 @@ export default function CalendarPage() {
             flexDirection: 'column',
             justifyContent: 'center',
             alignItems: 'center',
-            minHeight: '60px',
+            minHeight: '50px',
             cursor: 'pointer',
           }}
         >
-          <Text size="lg" fw={500} c="black">
+          <Text size="sm" fw={500} c="black" style={{ fontSize: 'clamp(0.75rem, 2.5vw, 1rem)' }}>
             {day}
           </Text>
           {dayData && (
-            <Text size="xs" c="black">
+            <Text size="xs" c="black" style={{ fontSize: 'clamp(0.5rem, 2vw, 0.75rem)' }}>
               {dayData.points}/4
             </Text>
           )}
@@ -255,37 +255,35 @@ export default function CalendarPage() {
 
   return (
     <Stack gap="lg">
-      <Group justify="space-between" align="center">
+      <Stack gap="sm">
         <Title order={2}>Calendar</Title>
-        <Group>
-          {groups.length > 0 && (
-            <>
+        {groups.length > 0 && (
+          <Stack gap="xs">
+            <Select
+              placeholder="Select group"
+              value={selectedGroup}
+              onChange={setSelectedGroup}
+              data={groups.map((g) => ({
+                value: g.id.toString(),
+                label: g.name,
+              }))}
+              style={{ width: '100%' }}
+            />
+            {members.length > 0 && (
               <Select
-                placeholder="Select group"
-                value={selectedGroup}
-                onChange={setSelectedGroup}
-                data={groups.map((g) => ({
-                  value: g.id.toString(),
-                  label: g.name,
+                placeholder="Select member"
+                value={selectedUser}
+                onChange={setSelectedUser}
+                data={members.map((m) => ({
+                  value: m.id.toString(),
+                  label: m.name || m.email,
                 }))}
-                style={{ width: 200 }}
+                style={{ width: '100%' }}
               />
-              {members.length > 0 && (
-                <Select
-                  placeholder="Select member"
-                  value={selectedUser}
-                  onChange={setSelectedUser}
-                  data={members.map((m) => ({
-                    value: m.id.toString(),
-                    label: m.name || m.email,
-                  }))}
-                  style={{ width: 200 }}
-                />
-              )}
-            </>
-          )}
-        </Group>
-      </Group>
+            )}
+          </Stack>
+        )}
+      </Stack>
 
       {isViewingOtherUser && selectedMember && (
         <Paper p="sm" withBorder style={{ backgroundColor: '#f0f7ff' }}>
@@ -310,7 +308,7 @@ export default function CalendarPage() {
           </ActionIcon>
         </Group>
 
-        <SimpleGrid cols={7} spacing="xs">
+        <SimpleGrid cols={7} spacing={{ base: 2, xs: 4, sm: 'xs' }}>
           {calendarData && renderCalendar()}
         </SimpleGrid>
       </Paper>

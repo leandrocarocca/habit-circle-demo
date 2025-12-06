@@ -40,8 +40,18 @@ export function AppShellLayout({ children }: { children: React.ReactNode }) {
             color="red"
             leftSection={<IconLogout size={16} />}
             onClick={handleSignOut}
+            visibleFrom="sm"
           >
             Sign out
+          </Button>
+          <Button
+            variant="subtle"
+            color="red"
+            onClick={handleSignOut}
+            hiddenFrom="sm"
+            size="compact-sm"
+          >
+            <IconLogout size={16} />
           </Button>
         </Group>
       </AppShell.Header>

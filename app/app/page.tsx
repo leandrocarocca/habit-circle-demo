@@ -142,7 +142,7 @@ export default function AppPage() {
 
   return (
     <Stack gap="lg">
-      <Group justify="space-between" align="center">
+      <Stack gap="sm">
         <Title order={2}>Dashboard</Title>
         <Select
           placeholder="Select a group"
@@ -152,9 +152,9 @@ export default function AppPage() {
             value: g.id.toString(),
             label: g.name,
           }))}
-          style={{ width: 250 }}
+          style={{ width: '100%', maxWidth: 250 }}
         />
-      </Group>
+      </Stack>
 
       {selectedGroupData && (
         <Paper p="lg" withBorder>
@@ -173,17 +173,18 @@ export default function AppPage() {
       {memberStats.length > 0 && (
         <Paper p="lg" withBorder>
           <Title order={3} mb="md">Group Statistics</Title>
-          <Table>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>Member</Table.Th>
-                <Table.Th>Total Points</Table.Th>
-                <Table.Th>Logged Food</Table.Th>
-                <Table.Th>Under Calorie Limit</Table.Th>
-                <Table.Th>Protein Goal</Table.Th>
-                <Table.Th>Days Cheated</Table.Th>
-              </Table.Tr>
-            </Table.Thead>
+          <div style={{ overflowX: 'auto' }}>
+            <Table>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>Member</Table.Th>
+                  <Table.Th>Total Points</Table.Th>
+                  <Table.Th>Logged Food</Table.Th>
+                  <Table.Th>Under Calorie Limit</Table.Th>
+                  <Table.Th>Protein Goal</Table.Th>
+                  <Table.Th>Days Cheated</Table.Th>
+                </Table.Tr>
+              </Table.Thead>
             <Table.Tbody>
               {memberStats
                 .sort((a, b) => b.stats.total_points - a.stats.total_points)
@@ -225,7 +226,8 @@ export default function AppPage() {
                   </Table.Tr>
                 ))}
             </Table.Tbody>
-          </Table>
+            </Table>
+          </div>
         </Paper>
       )}
     </Stack>
