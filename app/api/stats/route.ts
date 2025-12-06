@@ -198,12 +198,12 @@ export async function GET(request: Request) {
       [targetUserId, trackingStartDate]
     );
 
-    // Days not cheating - total count
-    const noCheatTotal = await pool.query(
+    // Days cheated - total count (where no_cheat_foods is false)
+    const cheatTotal = await pool.query(
       `SELECT COUNT(*) as total
        FROM daily_logs
        WHERE user_id = $1
-       AND no_cheat_foods = true
+       AND no_cheat_foods = false
        AND ($2::date IS NULL OR log_date >= $2)`,
       [targetUserId, trackingStartDate]
     );
@@ -223,8 +223,8 @@ export async function GET(request: Request) {
         total: parseInt(proteinTotal.rows[0].total),
         current_streak: parseInt(proteinStreak.rows[0].current_streak || 0),
       },
-      no_cheat: {
-        total: parseInt(noCheatTotal.rows[0].total),
+      cheat_days: {
+        total: parseInt(cheatTotal.rows[0].total),
       },
     });
   } catch (error) {

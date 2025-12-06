@@ -230,11 +230,11 @@ export default function CalendarPage() {
             cursor: 'pointer',
           }}
         >
-          <Text size="lg" fw={500}>
+          <Text size="lg" fw={500} c="black">
             {day}
           </Text>
           {dayData && (
-            <Text size="xs" c="dimmed">
+            <Text size="xs" c="black">
               {dayData.points}/4
             </Text>
           )}

@@ -18,7 +18,7 @@ interface Stats {
     total: number;
     current_streak: number;
   };
-  no_cheat: {
+  cheat_days: {
     total: number;
   };
 }
@@ -181,7 +181,7 @@ export default function AppPage() {
                 <Table.Th>Logged Food</Table.Th>
                 <Table.Th>Under Calorie Limit</Table.Th>
                 <Table.Th>Protein Goal</Table.Th>
-                <Table.Th>No Cheat</Table.Th>
+                <Table.Th>Days Cheated</Table.Th>
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
@@ -220,7 +220,7 @@ export default function AppPage() {
                       </Stack>
                     </Table.Td>
                     <Table.Td>
-                      <Text size="sm">{member.stats.no_cheat.total} days</Text>
+                      <Text size="sm">{member.stats.cheat_days.total} days</Text>
                     </Table.Td>
                   </Table.Tr>
                 ))}
