@@ -32,9 +32,21 @@ export async function GET() {
 
     const loggedFoodStreak = await pool.query(
       `WITH RECURSIVE date_series AS (
-        SELECT CURRENT_DATE as check_date, 0 as streak
+        SELECT
+          CURRENT_DATE as check_date,
+          CASE
+            WHEN EXISTS (
+              SELECT 1 FROM daily_logs
+              WHERE user_id = $1
+              AND log_date = CURRENT_DATE
+              AND logged_food = true
+            ) THEN 1
+            ELSE 0
+          END as streak
         UNION ALL
-        SELECT check_date - 1, streak + 1
+        SELECT
+          check_date - 1,
+          streak + 1
         FROM date_series
         WHERE EXISTS (
           SELECT 1 FROM daily_logs
@@ -42,6 +54,7 @@ export async function GET() {
           AND log_date = check_date - 1
           AND logged_food = true
         )
+        AND streak > 0
         AND streak < 1000
       )
       SELECT MAX(streak) as current_streak FROM date_series`,
@@ -56,9 +69,21 @@ export async function GET() {
 
     const calorieStreak = await pool.query(
       `WITH RECURSIVE date_series AS (
-        SELECT CURRENT_DATE as check_date, 0 as streak
+        SELECT
+          CURRENT_DATE as check_date,
+          CASE
+            WHEN EXISTS (
+              SELECT 1 FROM daily_logs
+              WHERE user_id = $1
+              AND log_date = CURRENT_DATE
+              AND within_calorie_limit = true
+            ) THEN 1
+            ELSE 0
+          END as streak
         UNION ALL
-        SELECT check_date - 1, streak + 1
+        SELECT
+          check_date - 1,
+          streak + 1
         FROM date_series
         WHERE EXISTS (
           SELECT 1 FROM daily_logs
@@ -66,6 +91,7 @@ export async function GET() {
           AND log_date = check_date - 1
           AND within_calorie_limit = true
         )
+        AND streak > 0
         AND streak < 1000
       )
       SELECT MAX(streak) as current_streak FROM date_series`,
@@ -80,9 +106,21 @@ export async function GET() {
 
     const proteinStreak = await pool.query(
       `WITH RECURSIVE date_series AS (
-        SELECT CURRENT_DATE as check_date, 0 as streak
+        SELECT
+          CURRENT_DATE as check_date,
+          CASE
+            WHEN EXISTS (
+              SELECT 1 FROM daily_logs
+              WHERE user_id = $1
+              AND log_date = CURRENT_DATE
+              AND protein_goal_met = true
+            ) THEN 1
+            ELSE 0
+          END as streak
         UNION ALL
-        SELECT check_date - 1, streak + 1
+        SELECT
+          check_date - 1,
+          streak + 1
         FROM date_series
         WHERE EXISTS (
           SELECT 1 FROM daily_logs
@@ -90,6 +128,7 @@ export async function GET() {
           AND log_date = check_date - 1
           AND protein_goal_met = true
         )
+        AND streak > 0
         AND streak < 1000
       )
       SELECT MAX(streak) as current_streak FROM date_series`,
