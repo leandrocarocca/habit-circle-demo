@@ -43,7 +43,23 @@ CREATE TABLE IF NOT EXISTS verification_tokens (
   PRIMARY KEY (identifier, token)
 );
 
+-- Daily logs table for tracking habits
+CREATE TABLE IF NOT EXISTS daily_logs (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  log_date DATE NOT NULL,
+  logged_food BOOLEAN DEFAULT FALSE,
+  within_calorie_limit BOOLEAN DEFAULT FALSE,
+  protein_goal_met BOOLEAN DEFAULT FALSE,
+  no_cheat_foods BOOLEAN DEFAULT FALSE,
+  is_completed BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, log_date)
+);
+
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_accounts_user_id ON accounts(user_id);
+CREATE INDEX IF NOT EXISTS idx_daily_logs_user_date ON daily_logs(user_id, log_date);
