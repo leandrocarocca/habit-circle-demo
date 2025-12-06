@@ -47,17 +47,19 @@ export default function LoggingPage() {
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
 
+    const fullDate = date.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+
     if (formatDate(date) === formatDate(today)) {
-      return 'Today';
+      return `Today - ${fullDate}`;
     } else if (formatDate(date) === formatDate(yesterday)) {
-      return 'Yesterday';
+      return `Yesterday - ${fullDate}`;
     } else {
-      return date.toLocaleDateString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      });
+      return fullDate;
     }
   };
 
