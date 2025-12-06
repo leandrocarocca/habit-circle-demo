@@ -63,9 +63,10 @@ export async function GET() {
         )
         AND streak > 0
         AND streak < 1000
+        AND ($2::date IS NULL OR check_date - 1 >= $2)
       )
       SELECT MAX(streak) as current_streak FROM date_series`,
-      [session.user.id]
+      [session.user.id, trackingStartDate]
     );
 
     // Days under calorie limit - total count and current streak
@@ -104,9 +105,10 @@ export async function GET() {
         )
         AND streak > 0
         AND streak < 1000
+        AND ($2::date IS NULL OR check_date - 1 >= $2)
       )
       SELECT MAX(streak) as current_streak FROM date_series`,
-      [session.user.id]
+      [session.user.id, trackingStartDate]
     );
 
     // Days reached protein goal - total count and current streak
@@ -145,9 +147,10 @@ export async function GET() {
         )
         AND streak > 0
         AND streak < 1000
+        AND ($2::date IS NULL OR check_date - 1 >= $2)
       )
       SELECT MAX(streak) as current_streak FROM date_series`,
-      [session.user.id]
+      [session.user.id, trackingStartDate]
     );
 
     // Days not cheating - total count
