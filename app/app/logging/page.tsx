@@ -39,9 +39,12 @@ export default function LoggingPage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // Format date as YYYY-MM-DD
+  // Format date as YYYY-MM-DD in local timezone
   const formatDate = (date: Date) => {
-    return date.toISOString().split('T')[0];
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   };
 
   // Format date for display
@@ -83,6 +86,16 @@ export default function LoggingPage() {
 
   const loadLog = async () => {
     setLoading(true);
+    // Reset log state to default while loading
+    setLog({
+      log_date: '',
+      logged_food: false,
+      within_calorie_limit: false,
+      protein_goal_met: false,
+      no_cheat_foods: false,
+      is_completed: false,
+      points: 0,
+    });
     try {
       const dateStr = formatDate(currentDate);
       const response = await fetch(`/api/logs?date=${dateStr}`);
