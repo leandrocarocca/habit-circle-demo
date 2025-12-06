@@ -21,6 +21,7 @@ interface DailyLog {
   protein_goal_met: boolean;
   no_cheat_foods: boolean;
   is_completed: boolean;
+  points: number;
 }
 
 export default function LoggingPage() {
@@ -32,6 +33,7 @@ export default function LoggingPage() {
     protein_goal_met: false,
     no_cheat_foods: false,
     is_completed: false,
+    points: 0,
   });
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -180,9 +182,14 @@ export default function LoggingPage() {
             <IconChevronLeft size={20} />
           </ActionIcon>
 
-          <Text size="xl" fw={600}>
-            {formatDisplayDate(currentDate)}
-          </Text>
+          <Stack gap={0} align="center">
+            <Text size="xl" fw={600}>
+              {formatDisplayDate(currentDate)}
+            </Text>
+            <Text size="sm" c="dimmed">
+              Points: {log.points}/4
+            </Text>
+          </Stack>
 
           <ActionIcon
             onClick={goToNextDay}

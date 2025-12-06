@@ -31,6 +31,7 @@ export async function GET(request: Request) {
         protein_goal_met: false,
         no_cheat_foods: false,
         is_completed: false,
+        points: 0,
       });
     }
 
@@ -67,10 +68,14 @@ export async function POST(request: Request) {
 
     const pool = new Pool({ connectionString: process.env.POSTGRES_URL });
 
+    // Calculate points (1 point per checked item)
+    const points = [logged_food, within_calorie_limit, protein_goal_met, no_cheat_foods]
+      .filter(Boolean).length;
+
     // Upsert (insert or update) the daily log
     const result = await pool.query(
-      `INSERT INTO daily_logs (user_id, log_date, logged_food, within_calorie_limit, protein_goal_met, no_cheat_foods, is_completed, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP)
+      `INSERT INTO daily_logs (user_id, log_date, logged_food, within_calorie_limit, protein_goal_met, no_cheat_foods, is_completed, points, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP)
        ON CONFLICT (user_id, log_date)
        DO UPDATE SET
          logged_food = $3,
@@ -78,6 +83,7 @@ export async function POST(request: Request) {
          protein_goal_met = $5,
          no_cheat_foods = $6,
          is_completed = $7,
+         points = $8,
          updated_at = CURRENT_TIMESTAMP
        RETURNING *`,
       [
@@ -88,6 +94,7 @@ export async function POST(request: Request) {
         protein_goal_met ?? false,
         no_cheat_foods ?? false,
         is_completed ?? false,
+        points,
       ]
     );
 
