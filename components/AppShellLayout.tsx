@@ -1,10 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { AppShell, Burger, Group, Button, NavLink } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
+import { AppShell, Group, Button, NavLink, Stack, Text, UnstyledButton } from '@mantine/core';
 import { signOut } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import {
   IconHome,
   IconSettings,
@@ -15,26 +14,32 @@ import {
 } from '@tabler/icons-react';
 
 export function AppShellLayout({ children }: { children: React.ReactNode }) {
-  const [opened, { toggle }] = useDisclosure();
   const router = useRouter();
+  const pathname = usePathname();
 
   const handleSignOut = async () => {
     await signOut({ redirect: false });
     router.push('/login');
   };
 
+  const navItems = [
+    { href: '/app', label: 'Home', icon: IconHome },
+    { href: '/app/logging', label: 'Log', icon: IconClipboardList },
+    { href: '/app/calendar', label: 'Calendar', icon: IconCalendar },
+    { href: '/app/groups', label: 'Groups', icon: IconUsers },
+    { href: '/app/settings', label: 'Settings', icon: IconSettings },
+  ];
+
   return (
     <AppShell
       header={{ height: 60 }}
-      navbar={{ width: 300, breakpoint: 'sm', collapsed: { mobile: !opened } }}
+      navbar={{ width: 300, breakpoint: 'sm', collapsed: { mobile: true } }}
+      footer={{ height: 60 }}
       padding="md"
     >
       <AppShell.Header>
         <Group h="100%" px="md" justify="space-between">
-          <Group>
-            <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
-            <div style={{ fontWeight: 700, fontSize: '1.2rem' }}>Habit Circle</div>
-          </Group>
+          <div style={{ fontWeight: 700, fontSize: '1.2rem' }}>Habit Circle</div>
           <Button
             variant="subtle"
             color="red"
@@ -56,7 +61,8 @@ export function AppShellLayout({ children }: { children: React.ReactNode }) {
         </Group>
       </AppShell.Header>
 
-      <AppShell.Navbar p="md">
+      {/* Desktop Navbar */}
+      <AppShell.Navbar p="md" visibleFrom="sm">
         <NavLink
           href="/app"
           label="Home"
@@ -84,7 +90,49 @@ export function AppShellLayout({ children }: { children: React.ReactNode }) {
         />
       </AppShell.Navbar>
 
-      <AppShell.Main>{children}</AppShell.Main>
+      {/* Mobile Bottom Tabs */}
+      <AppShell.Footer hiddenFrom="sm" withBorder>
+        <Group
+          h="100%"
+          justify="space-around"
+          align="center"
+          px="xs"
+          style={{ width: '100%' }}
+        >
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = pathname === item.href;
+            return (
+              <UnstyledButton
+                key={item.href}
+                onClick={() => router.push(item.href)}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '4px 8px',
+                  flex: 1,
+                  color: isActive ? 'var(--mantine-color-blue-6)' : 'var(--mantine-color-gray-6)',
+                }}
+              >
+                <Icon size={20} stroke={isActive ? 2.5 : 1.5} />
+                <Text size="10px" fw={isActive ? 600 : 400} mt={2}>
+                  {item.label}
+                </Text>
+              </UnstyledButton>
+            );
+          })}
+        </Group>
+      </AppShell.Footer>
+
+      <AppShell.Main
+        style={{
+          paddingBottom: 'calc(var(--app-shell-footer-height, 0px) + var(--mantine-spacing-md))',
+        }}
+      >
+        {children}
+      </AppShell.Main>
     </AppShell>
   );
 }
