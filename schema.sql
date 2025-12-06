@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS users (
   email_verified TIMESTAMP,
   password VARCHAR(255) NOT NULL,
   image VARCHAR(255),
+  tracking_start_date DATE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
