@@ -18,16 +18,23 @@ export async function GET() {
     );
     const trackingStartDate = userResult.rows[0]?.tracking_start_date;
 
-    // Get total points
+    // Get total points (only after start date)
     const totalResult = await pool.query(
-      "SELECT COALESCE(SUM(points), 0) as total_points FROM daily_logs WHERE user_id = $1",
-      [session.user.id]
+      `SELECT COALESCE(SUM(points), 0) as total_points
+       FROM daily_logs
+       WHERE user_id = $1
+       AND ($2::date IS NULL OR log_date >= $2)`,
+      [session.user.id, trackingStartDate]
     );
 
     // Days logged food - total count and current streak
     const loggedFoodTotal = await pool.query(
-      "SELECT COUNT(*) as total FROM daily_logs WHERE user_id = $1 AND logged_food = true",
-      [session.user.id]
+      `SELECT COUNT(*) as total
+       FROM daily_logs
+       WHERE user_id = $1
+       AND logged_food = true
+       AND ($2::date IS NULL OR log_date >= $2)`,
+      [session.user.id, trackingStartDate]
     );
 
     const loggedFoodStreak = await pool.query(
@@ -63,8 +70,12 @@ export async function GET() {
 
     // Days under calorie limit - total count and current streak
     const calorieTotal = await pool.query(
-      "SELECT COUNT(*) as total FROM daily_logs WHERE user_id = $1 AND within_calorie_limit = true",
-      [session.user.id]
+      `SELECT COUNT(*) as total
+       FROM daily_logs
+       WHERE user_id = $1
+       AND within_calorie_limit = true
+       AND ($2::date IS NULL OR log_date >= $2)`,
+      [session.user.id, trackingStartDate]
     );
 
     const calorieStreak = await pool.query(
@@ -100,8 +111,12 @@ export async function GET() {
 
     // Days reached protein goal - total count and current streak
     const proteinTotal = await pool.query(
-      "SELECT COUNT(*) as total FROM daily_logs WHERE user_id = $1 AND protein_goal_met = true",
-      [session.user.id]
+      `SELECT COUNT(*) as total
+       FROM daily_logs
+       WHERE user_id = $1
+       AND protein_goal_met = true
+       AND ($2::date IS NULL OR log_date >= $2)`,
+      [session.user.id, trackingStartDate]
     );
 
     const proteinStreak = await pool.query(
@@ -137,8 +152,12 @@ export async function GET() {
 
     // Days not cheating - total count
     const noCheatTotal = await pool.query(
-      "SELECT COUNT(*) as total FROM daily_logs WHERE user_id = $1 AND no_cheat_foods = true",
-      [session.user.id]
+      `SELECT COUNT(*) as total
+       FROM daily_logs
+       WHERE user_id = $1
+       AND no_cheat_foods = true
+       AND ($2::date IS NULL OR log_date >= $2)`,
+      [session.user.id, trackingStartDate]
     );
 
     return NextResponse.json({
