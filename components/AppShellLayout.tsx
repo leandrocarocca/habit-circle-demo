@@ -10,6 +10,7 @@ import {
   IconSettings,
   IconLogout,
   IconClipboardList,
+  IconCalendar,
 } from '@tabler/icons-react';
 
 export function AppShellLayout({ children }: { children: React.ReactNode }) {
@@ -54,6 +55,11 @@ export function AppShellLayout({ children }: { children: React.ReactNode }) {
           href="/app/logging"
           label="Logging"
           leftSection={<IconClipboardList size={16} />}
+        />
+        <NavLink
+          href="/app/calendar"
+          label="Calendar"
+          leftSection={<IconCalendar size={16} />}
         />
         <NavLink
           href="/app/settings"
