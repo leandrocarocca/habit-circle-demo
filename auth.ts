@@ -1,13 +1,9 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { Pool } from "@neondatabase/serverless";
-import { PgAdapter } from "@auth/pg-adapter";
 import bcrypt from "bcryptjs";
 
-const pool = new Pool({ connectionString: process.env.POSTGRES_URL });
-
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  adapter: PgAdapter(pool),
   providers: [
     Credentials({
       name: "credentials",
@@ -24,6 +20,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const password = credentials.password as string;
 
         try {
+          const pool = new Pool({ connectionString: process.env.POSTGRES_URL });
           const result = await pool.query(
             "SELECT * FROM users WHERE email = $1",
             [email]
