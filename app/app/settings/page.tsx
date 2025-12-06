@@ -75,7 +75,7 @@ export default function SettingsPage() {
             label="Start Date"
             placeholder="Pick a date"
             value={startDate}
-            onChange={(value) => setStartDate(value)}
+            onChange={(value: Date | null) => setStartDate(value)}
             disabled={loading}
             maxDate={new Date()}
           />
