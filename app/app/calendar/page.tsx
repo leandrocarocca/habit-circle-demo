@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Title, Paper, Stack, Group, ActionIcon, Text, SimpleGrid, Box } from '@mantine/core';
+import { useSession } from 'next-auth/react';
+import { Title, Paper, Stack, Group, ActionIcon, Text, SimpleGrid, Box, Select } from '@mantine/core';
 import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 
 interface DayData {
@@ -15,22 +16,94 @@ interface CalendarData {
   logs: Record<string, DayData>;
 }
 
+interface ChallengeGroup {
+  id: number;
+  name: string;
+}
+
+interface GroupMember {
+  id: number;
+  name: string;
+  email: string;
+}
+
 export default function CalendarPage() {
   const router = useRouter();
+  const { data: session } = useSession();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [calendarData, setCalendarData] = useState<CalendarData | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const [groups, setGroups] = useState<ChallengeGroup[]>([]);
+  const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
+  const [members, setMembers] = useState<GroupMember[]>([]);
+  const [selectedUser, setSelectedUser] = useState<string | null>(null);
+
   useEffect(() => {
-    loadCalendarData();
-  }, [currentDate]);
+    loadGroups();
+  }, []);
+
+  useEffect(() => {
+    if (selectedGroup) {
+      loadMembers(parseInt(selectedGroup));
+    }
+  }, [selectedGroup]);
+
+  useEffect(() => {
+    if (session?.user?.id && !selectedUser) {
+      setSelectedUser(session.user.id);
+    }
+  }, [session, selectedUser]);
+
+  useEffect(() => {
+    if (selectedUser) {
+      loadCalendarData();
+    }
+  }, [currentDate, selectedUser, selectedGroup]);
+
+  const loadGroups = async () => {
+    try {
+      const response = await fetch('/api/groups');
+      const data = await response.json();
+      setGroups(data);
+
+      if (data.length > 0) {
+        setSelectedGroup(data[0].id.toString());
+      }
+    } catch (error) {
+      console.error('Error loading groups:', error);
+    }
+  };
+
+  const loadMembers = async (groupId: number) => {
+    try {
+      const response = await fetch(`/api/groups/${groupId}/members`);
+      const data = await response.json();
+      setMembers(data);
+    } catch (error) {
+      console.error('Error loading members:', error);
+    }
+  };
 
   const loadCalendarData = async () => {
+    if (!selectedUser) return;
+
     setLoading(true);
     try {
       const year = currentDate.getFullYear();
       const month = currentDate.getMonth() + 1;
-      const response = await fetch(`/api/calendar?year=${year}&month=${month}`);
+      const params = new URLSearchParams({
+        year: year.toString(),
+        month: month.toString(),
+      });
+
+      // If viewing another user's calendar, add user_id and group_id
+      if (selectedUser !== session?.user?.id && selectedGroup) {
+        params.append('user_id', selectedUser);
+        params.append('group_id', selectedGroup);
+      }
+
+      const response = await fetch(`/api/calendar?${params.toString()}`);
       const data = await response.json();
       setCalendarData(data);
     } catch (error) {
@@ -177,11 +250,50 @@ export default function CalendarPage() {
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
 
+  const isViewingOtherUser = selectedUser !== session?.user?.id;
+  const selectedMember = members.find((m) => m.id.toString() === selectedUser);
+
   return (
     <Stack gap="lg">
       <Group justify="space-between" align="center">
         <Title order={2}>Calendar</Title>
+        <Group>
+          {groups.length > 0 && (
+            <>
+              <Select
+                placeholder="Select group"
+                value={selectedGroup}
+                onChange={setSelectedGroup}
+                data={groups.map((g) => ({
+                  value: g.id.toString(),
+                  label: g.name,
+                }))}
+                style={{ width: 200 }}
+              />
+              {members.length > 0 && (
+                <Select
+                  placeholder="Select member"
+                  value={selectedUser}
+                  onChange={setSelectedUser}
+                  data={members.map((m) => ({
+                    value: m.id.toString(),
+                    label: m.name || m.email,
+                  }))}
+                  style={{ width: 200 }}
+                />
+              )}
+            </>
+          )}
+        </Group>
       </Group>
+
+      {isViewingOtherUser && selectedMember && (
+        <Paper p="sm" withBorder style={{ backgroundColor: '#f0f7ff' }}>
+          <Text size="sm" c="blue" fw={500}>
+            Viewing calendar for: {selectedMember.name || selectedMember.email}
+          </Text>
+        </Paper>
+      )}
 
       <Paper p="md" withBorder>
         <Group justify="space-between" mb="md">

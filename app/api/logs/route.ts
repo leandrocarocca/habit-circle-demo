@@ -11,15 +11,42 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const date = searchParams.get("date");
+    const targetUserId = searchParams.get("user_id") || session.user.id;
+    const groupId = searchParams.get("group_id");
 
     if (!date) {
       return NextResponse.json({ error: "Date is required" }, { status: 400 });
     }
 
     const pool = new Pool({ connectionString: process.env.POSTGRES_URL });
+
+    // If viewing another user's logs, verify they're in the same group
+    if (targetUserId !== session.user.id) {
+      if (!groupId) {
+        return NextResponse.json(
+          { error: "Group ID required to view other users' logs" },
+          { status: 400 }
+        );
+      }
+
+      const groupCheck = await pool.query(
+        `SELECT 1 FROM group_memberships gm1
+         INNER JOIN group_memberships gm2 ON gm1.group_id = gm2.group_id
+         WHERE gm1.user_id = $1 AND gm2.user_id = $2 AND gm1.group_id = $3`,
+        [session.user.id, targetUserId, groupId]
+      );
+
+      if (groupCheck.rows.length === 0) {
+        return NextResponse.json(
+          { error: "You can only view logs of users in your group" },
+          { status: 403 }
+        );
+      }
+    }
+
     const result = await pool.query(
       "SELECT * FROM daily_logs WHERE user_id = $1 AND log_date = $2",
-      [session.user.id, date]
+      [targetUserId, date]
     );
 
     if (result.rows.length === 0) {

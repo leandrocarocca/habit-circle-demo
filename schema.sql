@@ -60,8 +60,44 @@ CREATE TABLE IF NOT EXISTS daily_logs (
   UNIQUE(user_id, log_date)
 );
 
+-- Challenge groups table
+CREATE TABLE IF NOT EXISTS challenge_groups (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  created_by INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  tracking_start_date DATE NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Group memberships table
+CREATE TABLE IF NOT EXISTS group_memberships (
+  id SERIAL PRIMARY KEY,
+  group_id INTEGER NOT NULL REFERENCES challenge_groups(id) ON DELETE CASCADE,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(group_id, user_id)
+);
+
+-- Group invitations table
+CREATE TABLE IF NOT EXISTS group_invitations (
+  id SERIAL PRIMARY KEY,
+  group_id INTEGER NOT NULL REFERENCES challenge_groups(id) ON DELETE CASCADE,
+  inviter_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  invitee_email VARCHAR(255) NOT NULL,
+  invitee_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  status VARCHAR(50) DEFAULT 'pending', -- pending, accepted, declined
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(group_id, invitee_email)
+);
+
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_accounts_user_id ON accounts(user_id);
 CREATE INDEX IF NOT EXISTS idx_daily_logs_user_date ON daily_logs(user_id, log_date);
+CREATE INDEX IF NOT EXISTS idx_group_memberships_user_id ON group_memberships(user_id);
+CREATE INDEX IF NOT EXISTS idx_group_memberships_group_id ON group_memberships(group_id);
+CREATE INDEX IF NOT EXISTS idx_group_invitations_invitee_email ON group_invitations(invitee_email);
+CREATE INDEX IF NOT EXISTS idx_group_invitations_invitee_id ON group_invitations(invitee_id);

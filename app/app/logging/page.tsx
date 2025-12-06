@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import {
   Title,
   Text,
@@ -11,6 +12,7 @@ import {
   Group,
   Paper,
   ActionIcon,
+  Select,
 } from '@mantine/core';
 import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
@@ -25,7 +27,19 @@ interface DailyLog {
   points: number;
 }
 
+interface ChallengeGroup {
+  id: number;
+  name: string;
+}
+
+interface GroupMember {
+  id: number;
+  name: string;
+  email: string;
+}
+
 export default function LoggingPage() {
+  const { data: session } = useSession();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [log, setLog] = useState<DailyLog>({
     log_date: '',
@@ -38,6 +52,11 @@ export default function LoggingPage() {
   });
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  const [groups, setGroups] = useState<ChallengeGroup[]>([]);
+  const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
+  const [members, setMembers] = useState<GroupMember[]>([]);
+  const [selectedUser, setSelectedUser] = useState<string | null>(null);
 
   // Format date as YYYY-MM-DD in local timezone
   const formatDate = (date: Date) => {
@@ -79,12 +98,56 @@ export default function LoggingPage() {
     }
   }, [searchParams]);
 
-  // Load log for current date
   useEffect(() => {
-    loadLog();
-  }, [currentDate]);
+    loadGroups();
+  }, []);
+
+  useEffect(() => {
+    if (selectedGroup) {
+      loadMembers(parseInt(selectedGroup));
+    }
+  }, [selectedGroup]);
+
+  useEffect(() => {
+    if (session?.user?.id && !selectedUser) {
+      setSelectedUser(session.user.id);
+    }
+  }, [session, selectedUser]);
+
+  // Load log for current date and selected user
+  useEffect(() => {
+    if (selectedUser) {
+      loadLog();
+    }
+  }, [currentDate, selectedUser, selectedGroup]);
+
+  const loadGroups = async () => {
+    try {
+      const response = await fetch('/api/groups');
+      const data = await response.json();
+      setGroups(data);
+
+      if (data.length > 0) {
+        setSelectedGroup(data[0].id.toString());
+      }
+    } catch (error) {
+      console.error('Error loading groups:', error);
+    }
+  };
+
+  const loadMembers = async (groupId: number) => {
+    try {
+      const response = await fetch(`/api/groups/${groupId}/members`);
+      const data = await response.json();
+      setMembers(data);
+    } catch (error) {
+      console.error('Error loading members:', error);
+    }
+  };
 
   const loadLog = async () => {
+    if (!selectedUser) return;
+
     setLoading(true);
     // Reset log state to default while loading
     setLog({
@@ -98,7 +161,15 @@ export default function LoggingPage() {
     });
     try {
       const dateStr = formatDate(currentDate);
-      const response = await fetch(`/api/logs?date=${dateStr}`);
+      const params = new URLSearchParams({ date: dateStr });
+
+      // If viewing another user's log, add user_id and group_id
+      if (selectedUser !== session?.user?.id && selectedGroup) {
+        params.append('user_id', selectedUser);
+        params.append('group_id', selectedGroup);
+      }
+
+      const response = await fetch(`/api/logs?${params.toString()}`);
       const data = await response.json();
       setLog(data);
     } catch (error) {
@@ -183,17 +254,55 @@ export default function LoggingPage() {
   };
 
   const isToday = formatDate(currentDate) === formatDate(new Date());
+  const isViewingOtherUser = selectedUser !== session?.user?.id;
+  const selectedMember = members.find((m) => m.id.toString() === selectedUser);
 
   return (
     <Stack gap="lg">
       <Group justify="space-between" align="center">
         <Title order={2}>Daily Logging</Title>
-        {!isToday && (
-          <Button onClick={goToToday} variant="light">
-            Go to Today
-          </Button>
-        )}
+        <Group>
+          {groups.length > 0 && (
+            <>
+              <Select
+                placeholder="Select group"
+                value={selectedGroup}
+                onChange={setSelectedGroup}
+                data={groups.map((g) => ({
+                  value: g.id.toString(),
+                  label: g.name,
+                }))}
+                style={{ width: 200 }}
+              />
+              {members.length > 0 && (
+                <Select
+                  placeholder="Select member"
+                  value={selectedUser}
+                  onChange={setSelectedUser}
+                  data={members.map((m) => ({
+                    value: m.id.toString(),
+                    label: m.name || m.email,
+                  }))}
+                  style={{ width: 200 }}
+                />
+              )}
+            </>
+          )}
+          {!isToday && (
+            <Button onClick={goToToday} variant="light">
+              Go to Today
+            </Button>
+          )}
+        </Group>
       </Group>
+
+      {isViewingOtherUser && selectedMember && (
+        <Paper p="sm" withBorder style={{ backgroundColor: '#f0f7ff' }}>
+          <Text size="sm" c="blue" fw={500}>
+            Viewing logs for: {selectedMember.name || selectedMember.email} (Read-only)
+          </Text>
+        </Paper>
+      )}
 
       <Paper p="md" withBorder>
         <Group justify="space-between" mb="md">
@@ -232,7 +341,7 @@ export default function LoggingPage() {
             onChange={(e) =>
               handleCheckboxChange('logged_food', e.currentTarget.checked)
             }
-            disabled={loading || saving || log.is_completed}
+            disabled={loading || saving || log.is_completed || isViewingOtherUser}
           />
           <Checkbox
             label="I have not gone over my calorie-limit"
@@ -243,7 +352,7 @@ export default function LoggingPage() {
                 e.currentTarget.checked
               )
             }
-            disabled={loading || saving || log.is_completed}
+            disabled={loading || saving || log.is_completed || isViewingOtherUser}
           />
           <Checkbox
             label="I have reached my goal of 100 grams of protein"
@@ -251,7 +360,7 @@ export default function LoggingPage() {
             onChange={(e) =>
               handleCheckboxChange('protein_goal_met', e.currentTarget.checked)
             }
-            disabled={loading || saving || log.is_completed}
+            disabled={loading || saving || log.is_completed || isViewingOtherUser}
           />
           <Checkbox
             label="I have not cheated today (eaten candy or junk-food)"
@@ -259,36 +368,45 @@ export default function LoggingPage() {
             onChange={(e) =>
               handleCheckboxChange('no_cheat_foods', e.currentTarget.checked)
             }
-            disabled={loading || saving || log.is_completed}
+            disabled={loading || saving || log.is_completed || isViewingOtherUser}
           />
         </Stack>
 
-        {log.is_completed ? (
-          <Stack gap="xs" mt="md">
-            <Text c="green" fw={500}>
-              ✓ Day completed!
-            </Text>
-            <Button
-              onClick={handleUncomplete}
-              fullWidth
-              variant="light"
-              color="gray"
-              loading={saving}
-              disabled={loading}
-            >
-              Mark as Incomplete
-            </Button>
-          </Stack>
-        ) : (
-          <Button
-            onClick={handleMarkComplete}
-            fullWidth
-            mt="md"
-            loading={saving}
-            disabled={loading}
-          >
-            Mark Day as Complete
-          </Button>
+        {!isViewingOtherUser && (
+          <>
+            {log.is_completed ? (
+              <Stack gap="xs" mt="md">
+                <Text c="green" fw={500}>
+                  ✓ Day completed!
+                </Text>
+                <Button
+                  onClick={handleUncomplete}
+                  fullWidth
+                  variant="light"
+                  color="gray"
+                  loading={saving}
+                  disabled={loading}
+                >
+                  Mark as Incomplete
+                </Button>
+              </Stack>
+            ) : (
+              <Button
+                onClick={handleMarkComplete}
+                fullWidth
+                mt="md"
+                loading={saving}
+                disabled={loading}
+              >
+                Mark Day as Complete
+              </Button>
+            )}
+          </>
+        )}
+        {isViewingOtherUser && log.is_completed && (
+          <Text c="green" fw={500} mt="md">
+            ✓ Day completed!
+          </Text>
         )}
       </Paper>
     </Stack>
