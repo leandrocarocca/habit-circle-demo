@@ -304,35 +304,36 @@ export default function LoggingPage() {
         </Paper>
       )}
 
+      <Group justify="center" mb="md" gap="xs">
+        <ActionIcon
+          onClick={goToPreviousDay}
+          size="lg"
+          variant="subtle"
+          disabled={loading}
+        >
+          <IconChevronLeft size={20} />
+        </ActionIcon>
+
+        <Stack gap={0} align="center" style={{ minWidth: '200px' }}>
+          <Text size="lg" fw={600} ta="center">
+            {formatDisplayDate(currentDate)}
+          </Text>
+          <Text size="sm" c="dimmed">
+            Points: {log.points}/4
+          </Text>
+        </Stack>
+
+        <ActionIcon
+          onClick={goToNextDay}
+          size="lg"
+          variant="subtle"
+          disabled={loading || isToday}
+        >
+          <IconChevronRight size={20} />
+        </ActionIcon>
+      </Group>
+
       <Paper p="md" withBorder>
-        <Group justify="space-between" mb="md">
-          <ActionIcon
-            onClick={goToPreviousDay}
-            size="lg"
-            variant="subtle"
-            disabled={loading}
-          >
-            <IconChevronLeft size={20} />
-          </ActionIcon>
-
-          <Stack gap={0} align="center">
-            <Text size="xl" fw={600}>
-              {formatDisplayDate(currentDate)}
-            </Text>
-            <Text size="sm" c="dimmed">
-              Points: {log.points}/4
-            </Text>
-          </Stack>
-
-          <ActionIcon
-            onClick={goToNextDay}
-            size="lg"
-            variant="subtle"
-            disabled={loading || isToday}
-          >
-            <IconChevronRight size={20} />
-          </ActionIcon>
-        </Group>
 
         <Stack gap="md">
           <Checkbox

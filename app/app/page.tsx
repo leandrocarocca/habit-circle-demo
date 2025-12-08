@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Title, Paper, Text, Stack, Table, Select, Group } from '@mantine/core';
+import { Title, Paper, Text, Stack, Table, Select, Group, Box } from '@mantine/core';
 
 interface Stats {
   total_points: number;
@@ -173,7 +173,9 @@ export default function AppPage() {
       {memberStats.length > 0 && (
         <Paper p="lg" withBorder>
           <Title order={3} mb="md">Group Statistics</Title>
-          <div style={{ overflowX: 'auto' }}>
+
+          {/* Desktop Table View */}
+          <Box style={{ overflowX: 'auto' }} visibleFrom="sm">
             <Table>
               <Table.Thead>
                 <Table.Tr>
@@ -185,49 +187,81 @@ export default function AppPage() {
                   <Table.Th>Days Cheated</Table.Th>
                 </Table.Tr>
               </Table.Thead>
-            <Table.Tbody>
-              {memberStats
-                .sort((a, b) => b.stats.total_points - a.stats.total_points)
-                .map((member) => (
-                  <Table.Tr key={member.userId}>
-                    <Table.Td>
-                      <Text fw={500}>{member.userName}</Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <Text fw={700} c="blue">{member.stats.total_points}</Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <Stack gap={0}>
-                        <Text size="sm">{member.stats.logged_food.total} days</Text>
-                        <Text size="xs" c="dimmed">
-                          {member.stats.logged_food.current_streak} streak
-                        </Text>
-                      </Stack>
-                    </Table.Td>
-                    <Table.Td>
-                      <Stack gap={0}>
-                        <Text size="sm">{member.stats.calorie_limit.total} days</Text>
-                        <Text size="xs" c="dimmed">
-                          {member.stats.calorie_limit.current_streak} streak
-                        </Text>
-                      </Stack>
-                    </Table.Td>
-                    <Table.Td>
-                      <Stack gap={0}>
-                        <Text size="sm">{member.stats.protein_goal.total} days</Text>
-                        <Text size="xs" c="dimmed">
-                          {member.stats.protein_goal.current_streak} streak
-                        </Text>
-                      </Stack>
-                    </Table.Td>
-                    <Table.Td>
-                      <Text size="sm">{member.stats.cheat_days.total} days</Text>
-                    </Table.Td>
-                  </Table.Tr>
-                ))}
-            </Table.Tbody>
+              <Table.Tbody>
+                {memberStats
+                  .sort((a, b) => b.stats.total_points - a.stats.total_points)
+                  .map((member) => (
+                    <Table.Tr key={member.userId}>
+                      <Table.Td>
+                        <Text fw={500}>{member.userName}</Text>
+                      </Table.Td>
+                      <Table.Td>
+                        <Text fw={700} c="blue">{member.stats.total_points}</Text>
+                      </Table.Td>
+                      <Table.Td>
+                        <Stack gap={0}>
+                          <Text size="sm">{member.stats.logged_food.total} days</Text>
+                          <Text size="xs" c="dimmed">
+                            {member.stats.logged_food.current_streak} streak
+                          </Text>
+                        </Stack>
+                      </Table.Td>
+                      <Table.Td>
+                        <Stack gap={0}>
+                          <Text size="sm">{member.stats.calorie_limit.total} days</Text>
+                          <Text size="xs" c="dimmed">
+                            {member.stats.calorie_limit.current_streak} streak
+                          </Text>
+                        </Stack>
+                      </Table.Td>
+                      <Table.Td>
+                        <Stack gap={0}>
+                          <Text size="sm">{member.stats.protein_goal.total} days</Text>
+                          <Text size="xs" c="dimmed">
+                            {member.stats.protein_goal.current_streak} streak
+                          </Text>
+                        </Stack>
+                      </Table.Td>
+                      <Table.Td>
+                        <Text size="sm">{member.stats.cheat_days.total} days</Text>
+                      </Table.Td>
+                    </Table.Tr>
+                  ))}
+              </Table.Tbody>
             </Table>
-          </div>
+          </Box>
+
+          {/* Mobile Card View */}
+          <Stack gap="md" hiddenFrom="sm">
+            {memberStats
+              .sort((a, b) => b.stats.total_points - a.stats.total_points)
+              .map((member, index) => (
+                <Paper key={member.userId} p="md" withBorder style={{ backgroundColor: index === 0 ? '#f0f7ff' : undefined }}>
+                  <Group justify="space-between" mb="sm">
+                    <Text fw={600} size="lg">{member.userName}</Text>
+                    <Text fw={700} c="blue" size="xl">{member.stats.total_points} pts</Text>
+                  </Group>
+                  <Stack gap="xs">
+                    <Group justify="space-between">
+                      <Text size="sm" c="dimmed">Logged Food</Text>
+                      <Text size="sm">{member.stats.logged_food.total} days ({member.stats.logged_food.current_streak} streak)</Text>
+                    </Group>
+                    <Group justify="space-between">
+                      <Text size="sm" c="dimmed">Calorie Limit</Text>
+                      <Text size="sm">{member.stats.calorie_limit.total} days ({member.stats.calorie_limit.current_streak} streak)</Text>
+                    </Group>
+                    <Group justify="space-between">
+                      <Text size="sm" c="dimmed">Protein Goal</Text>
+                      <Text size="sm">{member.stats.protein_goal.total} days ({member.stats.protein_goal.current_streak} streak)</Text>
+                    </Group>
+                    <Group justify="space-between">
+                      <Text size="sm" c="dimmed">Days Cheated</Text>
+                      <Text size="sm">{member.stats.cheat_days.total} days</Text>
+                    </Group>
+                  </Stack>
+                </Paper>
+              ))}
+          </Stack>
         </Paper>
       )}
     </Stack>
