@@ -208,13 +208,21 @@ export async function GET(request: Request) {
       [targetUserId, trackingStartDate]
     );
 
-    // Gym sessions - total count
-    const gymTotal = await pool.query(
-      `SELECT COUNT(*) as total
-       FROM daily_logs
-       WHERE user_id = $1
-       AND gym_session = true
-       AND ($2::date IS NULL OR log_date >= $2)`,
+    // Gym weeks - count weeks with 3+ gym sessions
+    // Group by week (Monday-Sunday) and count weeks where gym_count >= 3
+    const gymWeeksResult = await pool.query(
+      `SELECT COUNT(*) as weeks_count
+       FROM (
+         SELECT
+           DATE_TRUNC('week', log_date + INTERVAL '1 day') - INTERVAL '1 day' as week_start,
+           COUNT(*) as gym_count
+         FROM daily_logs
+         WHERE user_id = $1
+         AND gym_session = true
+         AND ($2::date IS NULL OR log_date >= $2)
+         GROUP BY week_start
+         HAVING COUNT(*) >= 3
+       ) weeks_with_3plus`,
       [targetUserId, trackingStartDate]
     );
 
@@ -236,8 +244,8 @@ export async function GET(request: Request) {
       cheat_days: {
         total: parseInt(cheatTotal.rows[0].total),
       },
-      gym_sessions: {
-        total: parseInt(gymTotal.rows[0].total),
+      gym_weeks: {
+        total: parseInt(gymWeeksResult.rows[0].weeks_count),
       },
     });
   } catch (error) {

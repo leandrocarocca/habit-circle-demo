@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { Pool } from "@neondatabase/serverless";
+import { getWeekRange, calculateGymBonus, calculateDailyPoints } from "@/lib/weekUtils";
 
 export async function GET(request: Request) {
   try {
@@ -97,44 +98,14 @@ export async function POST(request: Request) {
 
     const pool = new Pool({ connectionString: process.env.POSTGRES_URL });
 
-    // Calculate daily points (1 point per checked item for the 4 daily habits)
-    let points = [logged_food, within_calorie_limit, protein_goal_met, no_cheat_foods]
-      .filter(Boolean).length;
+    // Calculate daily points using utility function
+    const dailyPoints = calculateDailyPoints({
+      logged_food,
+      within_calorie_limit,
+      protein_goal_met,
+      no_cheat_foods,
+    });
 
-    // Calculate weekly gym points (3 points if 3+ gym sessions this week)
-    const logDate = new Date(date);
-    const dayOfWeek = logDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
-    const weekStart = new Date(logDate);
-    // Adjust to Monday as start of week
-    const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-    weekStart.setDate(logDate.getDate() + mondayOffset);
-    weekStart.setHours(0, 0, 0, 0);
-
-    const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekStart.getDate() + 6);
-    weekEnd.setHours(23, 59, 59, 999);
-
-    // Get gym sessions count for this week (including current update)
-    const gymCountResult = await pool.query(
-      `SELECT COUNT(*) as gym_count
-       FROM daily_logs
-       WHERE user_id = $1
-       AND log_date >= $2
-       AND log_date <= $3
-       AND log_date != $4
-       AND gym_session = true`,
-      [session.user.id, weekStart.toISOString().split('T')[0], weekEnd.toISOString().split('T')[0], date]
-    );
-
-    const currentWeekGymCount = parseInt(gymCountResult.rows[0].gym_count);
-    const totalGymThisWeek = currentWeekGymCount + (gym_session ? 1 : 0);
-
-    // Add 3 points if 3+ gym sessions this week
-    if (totalGymThisWeek >= 3) {
-      points += 3;
-    }
-
-    // Upsert (insert or update) the daily log
     const result = await pool.query(
       `INSERT INTO daily_logs (user_id, log_date, logged_food, within_calorie_limit, protein_goal_met, no_cheat_foods, gym_session, is_completed, points, updated_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP)
@@ -158,11 +129,65 @@ export async function POST(request: Request) {
         no_cheat_foods ?? false,
         gym_session ?? false,
         is_completed ?? false,
-        points,
+        dailyPoints, // Just daily points for now
       ]
     );
 
-    return NextResponse.json(result.rows[0]);
+    // Calculate the week range using utility function
+    const { weekStart, weekEnd } = getWeekRange(date);
+
+    console.log('=== Gym Points Debug ===');
+    console.log('Date:', date);
+    console.log('Week start:', weekStart.toISOString().split('T')[0]);
+    console.log('Week end:', weekEnd.toISOString().split('T')[0]);
+
+    // Get gym sessions count for this week
+    const gymCountResult = await pool.query(
+      `SELECT COUNT(*) as gym_count
+       FROM daily_logs
+       WHERE user_id = $1
+       AND log_date >= $2
+       AND log_date <= $3
+       AND gym_session = true`,
+      [session.user.id, weekStart.toISOString().split('T')[0], weekEnd.toISOString().split('T')[0]]
+    );
+
+    const totalGymThisWeek = parseInt(gymCountResult.rows[0].gym_count);
+    const gymBonus = calculateGymBonus(totalGymThisWeek);
+
+    console.log('Total gym sessions this week:', totalGymThisWeek);
+    console.log('Gym bonus:', gymBonus);
+    console.log('Daily points:', dailyPoints);
+
+    // Update points for ALL days in this week with the gym bonus
+    const updateResult = await pool.query(
+      `UPDATE daily_logs
+       SET points = (
+         (CASE WHEN logged_food THEN 1 ELSE 0 END) +
+         (CASE WHEN within_calorie_limit THEN 1 ELSE 0 END) +
+         (CASE WHEN protein_goal_met THEN 1 ELSE 0 END) +
+         (CASE WHEN no_cheat_foods THEN 1 ELSE 0 END) +
+         $4
+       ),
+       updated_at = CURRENT_TIMESTAMP
+       WHERE user_id = $1
+       AND log_date >= $2
+       AND log_date <= $3`,
+      [session.user.id, weekStart.toISOString().split('T')[0], weekEnd.toISOString().split('T')[0], gymBonus]
+    );
+
+    console.log('Updated', updateResult.rowCount, 'days in the week');
+
+    // Fetch and return the updated log for the requested date
+    const updatedResult = await pool.query(
+      "SELECT * FROM daily_logs WHERE user_id = $1 AND log_date = $2",
+      [session.user.id, date]
+    );
+
+    console.log('Final result for', date, ':', updatedResult.rows[0]);
+    console.log('========================\n');
+
+    return NextResponse.json(updatedResult.rows[0]);
   } catch (error) {
     console.error("Error saving log:", error);
     return NextResponse.json(
