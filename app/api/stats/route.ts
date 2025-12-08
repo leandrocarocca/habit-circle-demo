@@ -208,6 +208,16 @@ export async function GET(request: Request) {
       [targetUserId, trackingStartDate]
     );
 
+    // Gym sessions - total count
+    const gymTotal = await pool.query(
+      `SELECT COUNT(*) as total
+       FROM daily_logs
+       WHERE user_id = $1
+       AND gym_session = true
+       AND ($2::date IS NULL OR log_date >= $2)`,
+      [targetUserId, trackingStartDate]
+    );
+
     return NextResponse.json({
       total_points: parseInt(totalResult.rows[0].total_points),
       tracking_start_date: trackingStartDate,
@@ -225,6 +235,9 @@ export async function GET(request: Request) {
       },
       cheat_days: {
         total: parseInt(cheatTotal.rows[0].total),
+      },
+      gym_sessions: {
+        total: parseInt(gymTotal.rows[0].total),
       },
     });
   } catch (error) {

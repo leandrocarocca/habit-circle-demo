@@ -53,6 +53,7 @@ CREATE TABLE IF NOT EXISTS daily_logs (
   within_calorie_limit BOOLEAN DEFAULT FALSE,
   protein_goal_met BOOLEAN DEFAULT FALSE,
   no_cheat_foods BOOLEAN DEFAULT FALSE,
+  gym_session BOOLEAN DEFAULT FALSE,
   is_completed BOOLEAN DEFAULT FALSE,
   points INTEGER DEFAULT 0,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

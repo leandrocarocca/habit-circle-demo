@@ -57,6 +57,7 @@ export async function GET(request: Request) {
         within_calorie_limit: false,
         protein_goal_met: false,
         no_cheat_foods: false,
+        gym_session: false,
         is_completed: false,
         points: 0,
       });
@@ -86,6 +87,7 @@ export async function POST(request: Request) {
       within_calorie_limit,
       protein_goal_met,
       no_cheat_foods,
+      gym_session,
       is_completed,
     } = body;
 
@@ -95,22 +97,56 @@ export async function POST(request: Request) {
 
     const pool = new Pool({ connectionString: process.env.POSTGRES_URL });
 
-    // Calculate points (1 point per checked item)
-    const points = [logged_food, within_calorie_limit, protein_goal_met, no_cheat_foods]
+    // Calculate daily points (1 point per checked item for the 4 daily habits)
+    let points = [logged_food, within_calorie_limit, protein_goal_met, no_cheat_foods]
       .filter(Boolean).length;
+
+    // Calculate weekly gym points (3 points if 3+ gym sessions this week)
+    const logDate = new Date(date);
+    const dayOfWeek = logDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    const weekStart = new Date(logDate);
+    // Adjust to Monday as start of week
+    const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    weekStart.setDate(logDate.getDate() + mondayOffset);
+    weekStart.setHours(0, 0, 0, 0);
+
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+    weekEnd.setHours(23, 59, 59, 999);
+
+    // Get gym sessions count for this week (including current update)
+    const gymCountResult = await pool.query(
+      `SELECT COUNT(*) as gym_count
+       FROM daily_logs
+       WHERE user_id = $1
+       AND log_date >= $2
+       AND log_date <= $3
+       AND log_date != $4
+       AND gym_session = true`,
+      [session.user.id, weekStart.toISOString().split('T')[0], weekEnd.toISOString().split('T')[0], date]
+    );
+
+    const currentWeekGymCount = parseInt(gymCountResult.rows[0].gym_count);
+    const totalGymThisWeek = currentWeekGymCount + (gym_session ? 1 : 0);
+
+    // Add 3 points if 3+ gym sessions this week
+    if (totalGymThisWeek >= 3) {
+      points += 3;
+    }
 
     // Upsert (insert or update) the daily log
     const result = await pool.query(
-      `INSERT INTO daily_logs (user_id, log_date, logged_food, within_calorie_limit, protein_goal_met, no_cheat_foods, is_completed, points, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP)
+      `INSERT INTO daily_logs (user_id, log_date, logged_food, within_calorie_limit, protein_goal_met, no_cheat_foods, gym_session, is_completed, points, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP)
        ON CONFLICT (user_id, log_date)
        DO UPDATE SET
          logged_food = $3,
          within_calorie_limit = $4,
          protein_goal_met = $5,
          no_cheat_foods = $6,
-         is_completed = $7,
-         points = $8,
+         gym_session = $7,
+         is_completed = $8,
+         points = $9,
          updated_at = CURRENT_TIMESTAMP
        RETURNING *`,
       [
@@ -120,6 +156,7 @@ export async function POST(request: Request) {
         within_calorie_limit ?? false,
         protein_goal_met ?? false,
         no_cheat_foods ?? false,
+        gym_session ?? false,
         is_completed ?? false,
         points,
       ]

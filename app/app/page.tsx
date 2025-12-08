@@ -21,6 +21,9 @@ interface Stats {
   cheat_days: {
     total: number;
   };
+  gym_sessions: {
+    total: number;
+  };
 }
 
 interface ChallengeGroup {
@@ -185,6 +188,7 @@ export default function AppPage() {
                   <Table.Th>Under Calorie Limit</Table.Th>
                   <Table.Th>Protein Goal</Table.Th>
                   <Table.Th>Days Cheated</Table.Th>
+                  <Table.Th>Gym Sessions</Table.Th>
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
@@ -225,6 +229,9 @@ export default function AppPage() {
                       <Table.Td>
                         <Text size="sm">{member.stats.cheat_days.total} days</Text>
                       </Table.Td>
+                      <Table.Td>
+                        <Text size="sm">{member.stats.gym_sessions.total} sessions</Text>
+                      </Table.Td>
                     </Table.Tr>
                   ))}
               </Table.Tbody>
@@ -257,6 +264,10 @@ export default function AppPage() {
                     <Group justify="space-between">
                       <Text size="sm" c="dimmed">Days Cheated</Text>
                       <Text size="sm">{member.stats.cheat_days.total} days</Text>
+                    </Group>
+                    <Group justify="space-between">
+                      <Text size="sm" c="dimmed">Gym Sessions</Text>
+                      <Text size="sm">{member.stats.gym_sessions.total} sessions</Text>
                     </Group>
                   </Stack>
                 </Paper>

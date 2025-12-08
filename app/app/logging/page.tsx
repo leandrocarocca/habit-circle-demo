@@ -23,6 +23,7 @@ interface DailyLog {
   within_calorie_limit: boolean;
   protein_goal_met: boolean;
   no_cheat_foods: boolean;
+  gym_session: boolean;
   is_completed: boolean;
   points: number;
 }
@@ -47,6 +48,7 @@ export default function LoggingPage() {
     within_calorie_limit: false,
     protein_goal_met: false,
     no_cheat_foods: false,
+    gym_session: false,
     is_completed: false,
     points: 0,
   });
@@ -156,6 +158,7 @@ export default function LoggingPage() {
       within_calorie_limit: false,
       protein_goal_met: false,
       no_cheat_foods: false,
+      gym_session: false,
       is_completed: false,
       points: 0,
     });
@@ -368,6 +371,14 @@ export default function LoggingPage() {
             checked={log.no_cheat_foods}
             onChange={(e) =>
               handleCheckboxChange('no_cheat_foods', e.currentTarget.checked)
+            }
+            disabled={loading || saving || log.is_completed || isViewingOtherUser}
+          />
+          <Checkbox
+            label="I went to the gym for at least 45 minutes"
+            checked={log.gym_session}
+            onChange={(e) =>
+              handleCheckboxChange('gym_session', e.currentTarget.checked)
             }
             disabled={loading || saving || log.is_completed || isViewingOtherUser}
           />
