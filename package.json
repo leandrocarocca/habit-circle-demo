@@ -8,8 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "test:watch": "vitest",
-    "db:migrate": "tsx scripts/migrate.ts"
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@auth/pg-adapter": "^1.11.1",
