@@ -9,7 +9,7 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "migrate:v2": "tsx scripts/migrate-v2.ts"
+    "db:migrate": "tsx scripts/migrate.ts"
   },
   "dependencies": {
     "@auth/pg-adapter": "^1.11.1",

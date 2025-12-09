@@ -1,4 +1,7 @@
--- New table for checkbox definitions
+-- V002: Checkbox definitions table
+-- Description: Create flexible checkbox configuration system for V2
+
+-- Checkbox definitions table
 CREATE TABLE IF NOT EXISTS checkbox_definitions (
   id SERIAL PRIMARY KEY,
   name VARCHAR(100) UNIQUE NOT NULL,
@@ -20,22 +23,6 @@ CREATE TABLE IF NOT EXISTS checkbox_definitions (
 CREATE INDEX IF NOT EXISTS idx_checkbox_definitions_active_order
   ON checkbox_definitions(is_active, display_order)
   WHERE is_active = TRUE;
-
--- Migration: Add JSONB column for flexible checkbox states
-ALTER TABLE daily_logs ADD COLUMN IF NOT EXISTS checkbox_states JSONB DEFAULT '{}';
-
--- Migration: Populate checkbox_states from existing boolean columns
-UPDATE daily_logs SET checkbox_states = jsonb_build_object(
-  'logged_food', logged_food,
-  'within_calorie_limit', within_calorie_limit,
-  'protein_goal_met', protein_goal_met,
-  'no_cheat_foods', no_cheat_foods,
-  'gym_session', gym_session
-) WHERE checkbox_states = '{}';
-
--- Create index on checkbox_states for better query performance
-CREATE INDEX IF NOT EXISTS idx_daily_logs_checkbox_states
-  ON daily_logs USING GIN (checkbox_states);
 
 -- Insert default checkbox definitions
 INSERT INTO checkbox_definitions (name, label, points, type, weekly_threshold, display_order) VALUES
