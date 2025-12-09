@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { Pool } from "@neondatabase/serverless";
-import { getWeekRange } from "@/lib/weekUtils";
+import { getWeekRange, formatDateLocal } from "@/lib/weekUtils";
 import {
   calculateDailyCheckboxPoints,
   calculateWeeklyCheckboxPoints,
@@ -67,7 +67,7 @@ export async function GET(request: Request) {
        AND log_date >= $2
        AND log_date <= $3
        ORDER BY log_date ASC`,
-      [targetUserId, weekStart.toISOString().split('T')[0], weekEnd.toISOString().split('T')[0]]
+      [targetUserId, formatDateLocal(weekStart), formatDateLocal(weekEnd)]
     );
 
     const weekLogs: DailyLog[] = logsResult.rows;
@@ -124,14 +124,14 @@ export async function GET(request: Request) {
     for (let i = 0; i < 7; i++) {
       const date = new Date(weekStart);
       date.setDate(weekStart.getDate() + i);
-      const dateStr = date.toISOString().split('T')[0];
+      const dateStr = formatDateLocal(date);
       const log = weekLogs.find(l => l.log_date === dateStr);
       dailyLogsMap[days[i]] = log || null;
     }
 
     return NextResponse.json({
-      week_start: weekStart.toISOString().split('T')[0],
-      week_end: weekEnd.toISOString().split('T')[0],
+      week_start: formatDateLocal(weekStart),
+      week_end: formatDateLocal(weekEnd),
       total_points: totalDailyPoints + totalWeeklyPoints,
       daily_points: totalDailyPoints,
       weekly_points: totalWeeklyPoints,

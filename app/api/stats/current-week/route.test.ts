@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getWeekRange } from '../../../../lib/weekUtils';
+import { getWeekRange, formatDateLocal } from '../../../../lib/weekUtils';
 import {
   calculateDailyCheckboxPoints,
   calculateWeeklyCheckboxPoints,
@@ -319,6 +319,107 @@ describe('Current Week Stats Logic', () => {
       expect(totalDailyPoints).toBe(3);
       expect(totalWeeklyPoints).toBe(3);
       expect(totalDailyPoints + totalWeeklyPoints).toBe(6);
+    });
+  });
+
+  describe('Daily Logs Mapping', () => {
+    it('should correctly map daily logs to day names', () => {
+      const { weekStart, weekEnd } = getWeekRange('2024-12-09');
+
+      const weekLogs: DailyLog[] = [
+        {
+          user_id: 1,
+          log_date: '2024-12-09',
+          checkbox_states: { logged_food: true },
+          is_completed: true,
+        },
+        {
+          user_id: 1,
+          log_date: '2024-12-11',
+          checkbox_states: { logged_food: true },
+          is_completed: true,
+        },
+      ];
+
+      // Create daily logs map
+      const dailyLogsMap: Record<string, any> = {};
+      const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+      for (let i = 0; i < 7; i++) {
+        const date = new Date(weekStart);
+        date.setDate(weekStart.getDate() + i);
+        const dateStr = formatDateLocal(date);
+        const log = weekLogs.find(l => l.log_date === dateStr);
+        dailyLogsMap[days[i]] = log || null;
+      }
+
+      // Monday (2024-12-09) should have a log
+      expect(dailyLogsMap.Monday).not.toBeNull();
+      expect(dailyLogsMap.Monday?.log_date).toBe('2024-12-09');
+
+      // Tuesday should be null
+      expect(dailyLogsMap.Tuesday).toBeNull();
+
+      // Wednesday (2024-12-11) should have a log
+      expect(dailyLogsMap.Wednesday).not.toBeNull();
+      expect(dailyLogsMap.Wednesday?.log_date).toBe('2024-12-11');
+    });
+
+    it('should handle week with all days logged', () => {
+      const { weekStart } = getWeekRange('2024-12-09');
+
+      const weekLogs: DailyLog[] = [];
+      for (let i = 0; i < 7; i++) {
+        const date = new Date(weekStart);
+        date.setDate(weekStart.getDate() + i);
+        const dateStr = formatDateLocal(date);
+        weekLogs.push({
+          user_id: 1,
+          log_date: dateStr,
+          checkbox_states: { logged_food: true },
+          is_completed: true,
+        });
+      }
+
+      // Create daily logs map
+      const dailyLogsMap: Record<string, any> = {};
+      const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+      for (let i = 0; i < 7; i++) {
+        const date = new Date(weekStart);
+        date.setDate(weekStart.getDate() + i);
+        const dateStr = formatDateLocal(date);
+        const log = weekLogs.find(l => l.log_date === dateStr);
+        dailyLogsMap[days[i]] = log || null;
+      }
+
+      // All days should have logs
+      days.forEach(day => {
+        expect(dailyLogsMap[day]).not.toBeNull();
+        expect(dailyLogsMap[day]?.is_completed).toBe(true);
+      });
+    });
+
+    it('should handle week with no logs', () => {
+      const { weekStart } = getWeekRange('2024-12-09');
+      const weekLogs: DailyLog[] = [];
+
+      // Create daily logs map
+      const dailyLogsMap: Record<string, any> = {};
+      const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+      for (let i = 0; i < 7; i++) {
+        const date = new Date(weekStart);
+        date.setDate(weekStart.getDate() + i);
+        const dateStr = formatDateLocal(date);
+        const log = weekLogs.find(l => l.log_date === dateStr);
+        dailyLogsMap[days[i]] = log || null;
+      }
+
+      // All days should be null
+      days.forEach(day => {
+        expect(dailyLogsMap[day]).toBeNull();
+      });
     });
   });
 });
