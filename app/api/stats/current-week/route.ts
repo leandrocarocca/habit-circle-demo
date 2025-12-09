@@ -70,7 +70,13 @@ export async function GET(request: Request) {
       [targetUserId, formatDateLocal(weekStart), formatDateLocal(weekEnd)]
     );
 
-    const weekLogs: DailyLog[] = logsResult.rows;
+    // Normalize log_date to string format (database might return Date object)
+    const weekLogs: DailyLog[] = logsResult.rows.map(row => ({
+      ...row,
+      log_date: row.log_date instanceof Date
+        ? formatDateLocal(row.log_date)
+        : row.log_date,
+    }));
 
     // Calculate daily points for this week
     let totalDailyPoints = 0;
