@@ -117,6 +117,18 @@ export async function GET(request: Request) {
       };
     }
 
+    // Create a map of daily logs by date
+    const dailyLogsMap: Record<string, DailyLog | null> = {};
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(weekStart);
+      date.setDate(weekStart.getDate() + i);
+      const dateStr = date.toISOString().split('T')[0];
+      const log = weekLogs.find(l => l.log_date === dateStr);
+      dailyLogsMap[days[i]] = log || null;
+    }
+
     return NextResponse.json({
       week_start: weekStart.toISOString().split('T')[0],
       week_end: weekEnd.toISOString().split('T')[0],
@@ -126,6 +138,7 @@ export async function GET(request: Request) {
       checkbox_stats: checkboxStats,
       days_logged: weekLogs.filter(log => log.is_completed).length,
       total_days: 7,
+      daily_logs: dailyLogsMap,
     });
   } catch (error) {
     console.error("Error fetching current week stats:", error);

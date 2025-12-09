@@ -58,6 +58,13 @@ interface WeekCheckboxStat {
   is_complete: boolean;
 }
 
+interface DailyLogData {
+  user_id: number;
+  log_date: string;
+  checkbox_states: Record<string, boolean>;
+  is_completed: boolean;
+}
+
 interface WeekStats {
   week_start: string;
   week_end: string;
@@ -67,6 +74,7 @@ interface WeekStats {
   checkbox_stats: Record<string, WeekCheckboxStat>;
   days_logged: number;
   total_days: number;
+  daily_logs: Record<string, DailyLogData | null>;
 }
 
 interface MemberWeekStats {
@@ -253,68 +261,6 @@ export default function AppPage() {
         </Paper>
       )}
 
-      {memberWeekStats.length > 0 && (
-        <Paper p="lg" withBorder>
-          <Title order={3} mb="md">Current Week Overview</Title>
-          <Text size="sm" c="dimmed" mb="md">
-            Week: {new Date(memberWeekStats[0]?.weekStats.week_start).toLocaleDateString()} - {new Date(memberWeekStats[0]?.weekStats.week_end).toLocaleDateString()}
-          </Text>
-
-          <Stack gap="md">
-            {memberWeekStats
-              .sort((a, b) => b.weekStats.total_points - a.weekStats.total_points)
-              .map((member, index) => {
-                const checkboxes = Object.values(member.weekStats.checkbox_stats);
-                return (
-                  <Paper key={member.userId} p="md" withBorder style={{
-                    backgroundColor: index === 0 ? '#fff9e6' : index === 1 ? '#f5f5f5' : index === 2 ? '#fff4e6' : undefined
-                  }}>
-                    <Group justify="space-between" mb="sm">
-                      <Group gap="xs">
-                        {getRankIcon(index + 1)}
-                        <div>
-                          <Text fw={600}>{member.userName}</Text>
-                          <Text size="xs" c="dimmed">
-                            {member.weekStats.days_logged}/{member.weekStats.total_days} days logged
-                          </Text>
-                        </div>
-                      </Group>
-                      <div style={{ textAlign: 'right' }}>
-                        <Text fw={700} c="blue" size="lg">{member.weekStats.total_points} pts</Text>
-                        <Text size="xs" c="dimmed">this week</Text>
-                      </div>
-                    </Group>
-
-                    <Stack gap="xs">
-                      {checkboxes.map((checkbox) => (
-                        <Group key={checkbox.name} justify="space-between" style={{
-                          padding: '8px',
-                          borderRadius: '4px',
-                          backgroundColor: checkbox.is_complete ? '#e7f5ff' : '#f8f9fa',
-                        }}>
-                          <div style={{ flex: 1 }}>
-                            <Text size="sm" fw={500}>{checkbox.label}</Text>
-                            <Text size="xs" c="dimmed">
-                              {checkbox.type === 'daily'
-                                ? `${checkbox.completed_count}/7 days`
-                                : `${checkbox.completed_count}/${checkbox.weekly_threshold} sessions`}
-                            </Text>
-                          </div>
-                          <div style={{ textAlign: 'right' }}>
-                            <Badge color={checkbox.is_complete ? 'green' : 'gray'} variant="light">
-                              {checkbox.is_complete ? '✓ Complete' : 'In Progress'}
-                            </Badge>
-                          </div>
-                        </Group>
-                      ))}
-                    </Stack>
-                  </Paper>
-                );
-              })}
-          </Stack>
-        </Paper>
-      )}
-
       {memberStats.length > 0 && (
         <Paper p="lg" withBorder>
           <Title order={3} mb="md">All-Time Statistics</Title>
@@ -428,6 +374,82 @@ export default function AppPage() {
                   </Stack>
                 </Paper>
               ))}
+          </Stack>
+        </Paper>
+      )}
+
+      {memberWeekStats.length > 0 && (
+        <Paper p="lg" withBorder>
+          <Title order={3} mb="md">Current Week Overview</Title>
+          <Text size="sm" c="dimmed" mb="md">
+            Week: {new Date(memberWeekStats[0]?.weekStats.week_start).toLocaleDateString()} - {new Date(memberWeekStats[0]?.weekStats.week_end).toLocaleDateString()}
+          </Text>
+
+          <Stack gap="md">
+            {memberWeekStats
+              .sort((a, b) => b.weekStats.total_points - a.weekStats.total_points)
+              .map((member, index) => {
+                const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+                return (
+                  <Paper key={member.userId} p="md" withBorder style={{
+                    backgroundColor: index === 0 ? '#fff9e6' : index === 1 ? '#f5f5f5' : index === 2 ? '#fff4e6' : undefined
+                  }}>
+                    <Group justify="space-between" mb="sm">
+                      <Group gap="xs">
+                        {getRankIcon(index + 1)}
+                        <div>
+                          <Text fw={600}>{member.userName}</Text>
+                          <Text size="xs" c="dimmed">
+                            {member.weekStats.days_logged}/{member.weekStats.total_days} days logged
+                          </Text>
+                        </div>
+                      </Group>
+                      <div style={{ textAlign: 'right' }}>
+                        <Text fw={700} c="blue" size="lg">{member.weekStats.total_points} pts</Text>
+                        <Text size="xs" c="dimmed">this week</Text>
+                      </div>
+                    </Group>
+
+                    {/* Calendar View for Monday-Sunday */}
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))',
+                      gap: '8px',
+                      marginTop: '12px'
+                    }}>
+                      {days.map((day) => {
+                        const dayLog = member.weekStats.daily_logs[day];
+                        const isLogged = dayLog?.is_completed || false;
+                        const hasData = dayLog !== null;
+
+                        return (
+                          <div
+                            key={day}
+                            style={{
+                              padding: '8px',
+                              borderRadius: '8px',
+                              backgroundColor: isLogged ? '#d4f4dd' : hasData ? '#fff3cd' : '#f8f9fa',
+                              border: `2px solid ${isLogged ? '#40c057' : hasData ? '#ffd43b' : '#dee2e6'}`,
+                              textAlign: 'center',
+                            }}
+                          >
+                            <Text size="xs" fw={700} c="dimmed" style={{ marginBottom: '4px' }}>
+                              {day.substring(0, 3)}
+                            </Text>
+                            {isLogged ? (
+                              <Text size="xl" style={{ color: '#40c057' }}>✓</Text>
+                            ) : hasData ? (
+                              <Text size="xl" style={{ color: '#ffd43b' }}>○</Text>
+                            ) : (
+                              <Text size="xl" c="dimmed">-</Text>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </Paper>
+                );
+              })}
           </Stack>
         </Paper>
       )}
