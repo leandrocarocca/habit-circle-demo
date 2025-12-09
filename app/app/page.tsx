@@ -413,7 +413,7 @@ export default function AppPage() {
                     {/* Calendar View for Monday-Sunday */}
                     <div style={{
                       display: 'grid',
-                      gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))',
                       gap: '8px',
                       marginTop: '12px'
                     }}>
@@ -421,6 +421,21 @@ export default function AppPage() {
                         const dayLog = member.weekStats.daily_logs[day];
                         const isLogged = dayLog?.is_completed || false;
                         const hasData = dayLog !== null;
+                        const checkboxStates = dayLog?.checkbox_states || {};
+
+                        // Get list of checked checkboxes for this day
+                        const checkedBoxes = Object.keys(checkboxStates).filter(
+                          key => checkboxStates[key] === true
+                        );
+
+                        // Emoji mapping for checkboxes (mobile-friendly)
+                        const checkboxEmojis: Record<string, string> = {
+                          'logged_food': '🍽️',
+                          'within_calorie_limit': '🎯',
+                          'protein_goal_met': '💪',
+                          'no_cheat_foods': '✨',
+                          'gym_session': '🏋️',
+                        };
 
                         return (
                           <div
@@ -430,18 +445,25 @@ export default function AppPage() {
                               borderRadius: '8px',
                               backgroundColor: isLogged ? '#d4f4dd' : hasData ? '#fff3cd' : '#f8f9fa',
                               border: `2px solid ${isLogged ? '#40c057' : hasData ? '#ffd43b' : '#dee2e6'}`,
-                              textAlign: 'center',
+                              minHeight: '80px',
                             }}
                           >
-                            <Text size="xs" fw={700} c="dimmed" style={{ marginBottom: '4px' }}>
+                            <Text size="xs" fw={700} c="dimmed" ta="center" style={{ marginBottom: '6px' }}>
                               {day.substring(0, 3)}
                             </Text>
-                            {isLogged ? (
-                              <Text size="xl" style={{ color: '#40c057' }}>✓</Text>
-                            ) : hasData ? (
-                              <Text size="xl" style={{ color: '#ffd43b' }}>○</Text>
+                            {hasData ? (
+                              <Stack gap={2} align="center">
+                                {checkedBoxes.map((checkboxName) => (
+                                  <Text key={checkboxName} size="sm" style={{ lineHeight: 1.2 }}>
+                                    {checkboxEmojis[checkboxName] || '✓'}
+                                  </Text>
+                                ))}
+                                {checkedBoxes.length === 0 && (
+                                  <Text size="xs" c="dimmed" ta="center">Started</Text>
+                                )}
+                              </Stack>
                             ) : (
-                              <Text size="xl" c="dimmed">-</Text>
+                              <Text size="xl" c="dimmed" ta="center" mt="xs">-</Text>
                             )}
                           </div>
                         );
