@@ -13,31 +13,19 @@ import {
   Paper,
   ActionIcon,
   Select,
-  Badge,
 } from '@mantine/core';
 import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 
-interface CheckboxDefinition {
-  id: number;
-  name: string;
-  label: string;
-  points: number;
-  type: 'daily' | 'weekly';
-  weekly_threshold: number | null;
-  display_order: number;
-  is_active: boolean;
-}
-
 interface DailyLog {
   log_date: string;
-  checkbox_states: Record<string, boolean>;
+  logged_food: boolean;
+  within_calorie_limit: boolean;
+  protein_goal_met: boolean;
+  no_cheat_foods: boolean;
+  gym_session: boolean;
   is_completed: boolean;
-  calculated_points?: {
-    daily: number;
-    weekly: number;
-    total: number;
-  };
+  points: number;
 }
 
 interface ChallengeGroup {
@@ -54,11 +42,15 @@ interface GroupMember {
 export default function LoggingPage() {
   const { data: session } = useSession();
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [checkboxDefinitions, setCheckboxDefinitions] = useState<CheckboxDefinition[]>([]);
   const [log, setLog] = useState<DailyLog>({
     log_date: '',
-    checkbox_states: {},
+    logged_food: false,
+    within_calorie_limit: false,
+    protein_goal_met: false,
+    no_cheat_foods: false,
+    gym_session: false,
     is_completed: false,
+    points: 0,
   });
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -109,10 +101,6 @@ export default function LoggingPage() {
   }, [searchParams]);
 
   useEffect(() => {
-    loadCheckboxDefinitions();
-  }, []);
-
-  useEffect(() => {
     loadGroups();
   }, []);
 
@@ -130,25 +118,10 @@ export default function LoggingPage() {
 
   // Load log for current date and selected user
   useEffect(() => {
-    if (selectedUser && checkboxDefinitions.length > 0) {
+    if (selectedUser) {
       loadLog();
     }
-  }, [currentDate, selectedUser, selectedGroup, checkboxDefinitions]);
-
-  const loadCheckboxDefinitions = async () => {
-    try {
-      const response = await fetch('/api/checkboxes');
-      const data = await response.json();
-      setCheckboxDefinitions(data);
-    } catch (error) {
-      console.error('Error loading checkbox definitions:', error);
-      notifications.show({
-        title: 'Error',
-        message: 'Failed to load checkbox definitions',
-        color: 'red',
-      });
-    }
-  };
+  }, [currentDate, selectedUser, selectedGroup]);
 
   const loadGroups = async () => {
     try {
@@ -181,8 +154,13 @@ export default function LoggingPage() {
     // Reset log state to default while loading
     setLog({
       log_date: '',
-      checkbox_states: {},
+      logged_food: false,
+      within_calorie_limit: false,
+      protein_goal_met: false,
+      no_cheat_foods: false,
+      gym_session: false,
       is_completed: false,
+      points: 0,
     });
     try {
       const dateStr = formatDate(currentDate);
@@ -194,7 +172,7 @@ export default function LoggingPage() {
         params.append('group_id', selectedGroup);
       }
 
-      const response = await fetch(`/api/logs-v2?${params.toString()}`);
+      const response = await fetch(`/api/logs?${params.toString()}`);
       const data = await response.json();
       setLog(data);
     } catch (error) {
@@ -212,7 +190,7 @@ export default function LoggingPage() {
     setSaving(true);
     try {
       const updatedLog = { ...log, ...updates };
-      const response = await fetch('/api/logs-v2', {
+      const response = await fetch('/api/logs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -238,9 +216,8 @@ export default function LoggingPage() {
     }
   };
 
-  const handleCheckboxChange = (checkboxName: string, value: boolean) => {
-    const updatedStates = { ...log.checkbox_states, [checkboxName]: value };
-    const updates = { checkbox_states: updatedStates };
+  const handleCheckboxChange = (field: keyof DailyLog, value: boolean) => {
+    const updates = { [field]: value };
     setLog((prev) => ({ ...prev, ...updates }));
     saveLog(updates);
   };
@@ -344,16 +321,9 @@ export default function LoggingPage() {
           <Text size="lg" fw={600} ta="center">
             {formatDisplayDate(currentDate)}
           </Text>
-          {log.calculated_points && (
-            <Group gap="xs">
-              <Text size="sm" c="dimmed">
-                Points: {log.calculated_points.total}
-              </Text>
-              <Text size="xs" c="dimmed">
-                (Daily: {log.calculated_points.daily}, Weekly: {log.calculated_points.weekly})
-              </Text>
-            </Group>
-          )}
+          <Text size="sm" c="dimmed">
+            Points: {log.points}/4
+          </Text>
         </Stack>
 
         <ActionIcon
@@ -367,32 +337,51 @@ export default function LoggingPage() {
       </Group>
 
       <Paper p="md" withBorder>
+
         <Stack gap="md">
-          {checkboxDefinitions.map((checkbox) => (
-            <Group key={checkbox.name} justify="space-between">
-              <Checkbox
-                label={checkbox.label}
-                checked={log.checkbox_states[checkbox.name] || false}
-                onChange={(e) =>
-                  handleCheckboxChange(checkbox.name, e.currentTarget.checked)
-                }
-                disabled={loading || saving || log.is_completed || isViewingOtherUser}
-                style={{ flex: 1 }}
-              />
-              <Group gap="xs">
-                {checkbox.type === 'weekly' && checkbox.weekly_threshold && (
-                  <Badge size="sm" variant="light" color="blue">
-                    {checkbox.weekly_threshold}×/week → {checkbox.points}pts
-                  </Badge>
-                )}
-                {checkbox.type === 'daily' && (
-                  <Badge size="sm" variant="light" color="gray">
-                    {checkbox.points}pt
-                  </Badge>
-                )}
-              </Group>
-            </Group>
-          ))}
+          <Checkbox
+            label="I have logged my food today"
+            checked={log.logged_food}
+            onChange={(e) =>
+              handleCheckboxChange('logged_food', e.currentTarget.checked)
+            }
+            disabled={loading || saving || log.is_completed || isViewingOtherUser}
+          />
+          <Checkbox
+            label="I have not gone over my calorie-limit"
+            checked={log.within_calorie_limit}
+            onChange={(e) =>
+              handleCheckboxChange(
+                'within_calorie_limit',
+                e.currentTarget.checked
+              )
+            }
+            disabled={loading || saving || log.is_completed || isViewingOtherUser}
+          />
+          <Checkbox
+            label="I have reached my goal of 100 grams of protein"
+            checked={log.protein_goal_met}
+            onChange={(e) =>
+              handleCheckboxChange('protein_goal_met', e.currentTarget.checked)
+            }
+            disabled={loading || saving || log.is_completed || isViewingOtherUser}
+          />
+          <Checkbox
+            label="I have not cheated today (eaten candy or junk-food)"
+            checked={log.no_cheat_foods}
+            onChange={(e) =>
+              handleCheckboxChange('no_cheat_foods', e.currentTarget.checked)
+            }
+            disabled={loading || saving || log.is_completed || isViewingOtherUser}
+          />
+          <Checkbox
+            label="I went to the gym for at least 45 minutes"
+            checked={log.gym_session}
+            onChange={(e) =>
+              handleCheckboxChange('gym_session', e.currentTarget.checked)
+            }
+            disabled={loading || saving || log.is_completed || isViewingOtherUser}
+          />
         </Stack>
 
         {!isViewingOtherUser && (

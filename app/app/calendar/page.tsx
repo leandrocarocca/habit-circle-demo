@@ -103,7 +103,7 @@ export default function CalendarPage() {
         params.append('group_id', selectedGroup);
       }
 
-      const response = await fetch(`/api/calendar?${params.toString()}`);
+      const response = await fetch(`/api/calendar-v2?${params.toString()}`);
       const data = await response.json();
       setCalendarData(data);
     } catch (error) {

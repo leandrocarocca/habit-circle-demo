@@ -102,7 +102,7 @@ export default function AppPage() {
     try {
       const statsPromises = members.map(async (member) => {
         const response = await fetch(
-          `/api/stats?user_id=${member.id}&group_id=${selectedGroup}`
+          `/api/stats-v2?user_id=${member.id}&group_id=${selectedGroup}`
         );
         const stats = await response.json();
         return {

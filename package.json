@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "migrate:v2": "tsx scripts/migrate-v2.ts"
   },
   "dependencies": {
     "@auth/pg-adapter": "^1.11.1",
@@ -34,8 +35,10 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitest/ui": "^4.0.15",
+    "dotenv": "^17.2.3",
     "eslint": "^9",
     "eslint-config-next": "16.0.7",
+    "tsx": "^4.21.0",
     "typescript": "^5",
     "vitest": "^4.0.15"
   }
