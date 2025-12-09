@@ -1,10 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Title, Paper, Stack, Button, Text, TextInput } from '@mantine/core';
+import { useRouter } from 'next/navigation';
+import { Title, Paper, Stack, Button, Text, TextInput, Group } from '@mantine/core';
+import { IconSettings } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 
 export default function SettingsPage() {
+  const router = useRouter();
   const [startDate, setStartDate] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -62,6 +65,25 @@ export default function SettingsPage() {
   return (
     <Stack gap="lg">
       <Title order={2}>Settings</Title>
+
+      <Paper p="lg" withBorder>
+        <Stack gap="md">
+          <Group justify="space-between">
+            <div>
+              <Title order={3}>Checkboxes Configuration</Title>
+              <Text c="dimmed" size="sm">
+                Manage your daily and weekly habit checkboxes
+              </Text>
+            </div>
+            <Button
+              leftSection={<IconSettings size={16} />}
+              onClick={() => router.push('/app/settings/checkboxes')}
+            >
+              Manage Checkboxes
+            </Button>
+          </Group>
+        </Stack>
+      </Paper>
 
       <Paper p="lg" withBorder>
         <Stack gap="md">
