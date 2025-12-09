@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Title, Paper, Text, Stack, Table, Select, Group, Box } from '@mantine/core';
+import { Title, Paper, Text, Stack, Table, Select, Group, Box, Badge } from '@mantine/core';
+import { IconTrophy, IconMedal, IconAward } from '@tabler/icons-react';
 
 interface Stats {
   total_points: number;
@@ -46,11 +47,66 @@ interface MemberStats {
   stats: Stats;
 }
 
+interface WeekCheckboxStat {
+  name: string;
+  label: string;
+  type: string;
+  points: number;
+  weekly_threshold: number | null;
+  completed_count: number;
+  total_days: number;
+  is_complete: boolean;
+}
+
+interface WeekStats {
+  week_start: string;
+  week_end: string;
+  total_points: number;
+  daily_points: number;
+  weekly_points: number;
+  checkbox_stats: Record<string, WeekCheckboxStat>;
+  days_logged: number;
+  total_days: number;
+}
+
+interface MemberWeekStats {
+  userId: number;
+  userName: string;
+  weekStats: WeekStats;
+}
+
+const getRankIcon = (rank: number) => {
+  switch (rank) {
+    case 1:
+      return <IconTrophy size={24} color="gold" />;
+    case 2:
+      return <IconMedal size={24} color="silver" />;
+    case 3:
+      return <IconAward size={24} color="#CD7F32" />;
+    default:
+      return null;
+  }
+};
+
+const getRankBadge = (rank: number) => {
+  switch (rank) {
+    case 1:
+      return <Badge color="yellow" variant="filled">1st</Badge>;
+    case 2:
+      return <Badge color="gray" variant="filled">2nd</Badge>;
+    case 3:
+      return <Badge color="orange" variant="filled">3rd</Badge>;
+    default:
+      return <Badge color="blue" variant="light">{rank}th</Badge>;
+  }
+};
+
 export default function AppPage() {
   const [groups, setGroups] = useState<ChallengeGroup[]>([]);
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [members, setMembers] = useState<GroupMember[]>([]);
   const [memberStats, setMemberStats] = useState<MemberStats[]>([]);
+  const [memberWeekStats, setMemberWeekStats] = useState<MemberWeekStats[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -66,6 +122,7 @@ export default function AppPage() {
   useEffect(() => {
     if (members.length > 0 && selectedGroup) {
       loadAllMemberStats();
+      loadAllMemberWeekStats();
     }
   }, [members, selectedGroup]);
 
@@ -116,6 +173,29 @@ export default function AppPage() {
       setMemberStats(allStats);
     } catch (error) {
       console.error('Error loading member stats:', error);
+    }
+  };
+
+  const loadAllMemberWeekStats = async () => {
+    if (!selectedGroup) return;
+
+    try {
+      const weekStatsPromises = members.map(async (member) => {
+        const response = await fetch(
+          `/api/stats/current-week?user_id=${member.id}&group_id=${selectedGroup}`
+        );
+        const weekStats = await response.json();
+        return {
+          userId: member.id,
+          userName: member.name || member.email,
+          weekStats,
+        };
+      });
+
+      const allWeekStats = await Promise.all(weekStatsPromises);
+      setMemberWeekStats(allWeekStats);
+    } catch (error) {
+      console.error('Error loading member week stats:', error);
     }
   };
 
@@ -173,15 +253,78 @@ export default function AppPage() {
         </Paper>
       )}
 
+      {memberWeekStats.length > 0 && (
+        <Paper p="lg" withBorder>
+          <Title order={3} mb="md">Current Week Overview</Title>
+          <Text size="sm" c="dimmed" mb="md">
+            Week: {new Date(memberWeekStats[0]?.weekStats.week_start).toLocaleDateString()} - {new Date(memberWeekStats[0]?.weekStats.week_end).toLocaleDateString()}
+          </Text>
+
+          <Stack gap="md">
+            {memberWeekStats
+              .sort((a, b) => b.weekStats.total_points - a.weekStats.total_points)
+              .map((member, index) => {
+                const checkboxes = Object.values(member.weekStats.checkbox_stats);
+                return (
+                  <Paper key={member.userId} p="md" withBorder style={{
+                    backgroundColor: index === 0 ? '#fff9e6' : index === 1 ? '#f5f5f5' : index === 2 ? '#fff4e6' : undefined
+                  }}>
+                    <Group justify="space-between" mb="sm">
+                      <Group gap="xs">
+                        {getRankIcon(index + 1)}
+                        <div>
+                          <Text fw={600}>{member.userName}</Text>
+                          <Text size="xs" c="dimmed">
+                            {member.weekStats.days_logged}/{member.weekStats.total_days} days logged
+                          </Text>
+                        </div>
+                      </Group>
+                      <div style={{ textAlign: 'right' }}>
+                        <Text fw={700} c="blue" size="lg">{member.weekStats.total_points} pts</Text>
+                        <Text size="xs" c="dimmed">this week</Text>
+                      </div>
+                    </Group>
+
+                    <Stack gap="xs">
+                      {checkboxes.map((checkbox) => (
+                        <Group key={checkbox.name} justify="space-between" style={{
+                          padding: '8px',
+                          borderRadius: '4px',
+                          backgroundColor: checkbox.is_complete ? '#e7f5ff' : '#f8f9fa',
+                        }}>
+                          <div style={{ flex: 1 }}>
+                            <Text size="sm" fw={500}>{checkbox.label}</Text>
+                            <Text size="xs" c="dimmed">
+                              {checkbox.type === 'daily'
+                                ? `${checkbox.completed_count}/7 days`
+                                : `${checkbox.completed_count}/${checkbox.weekly_threshold} sessions`}
+                            </Text>
+                          </div>
+                          <div style={{ textAlign: 'right' }}>
+                            <Badge color={checkbox.is_complete ? 'green' : 'gray'} variant="light">
+                              {checkbox.is_complete ? '✓ Complete' : 'In Progress'}
+                            </Badge>
+                          </div>
+                        </Group>
+                      ))}
+                    </Stack>
+                  </Paper>
+                );
+              })}
+          </Stack>
+        </Paper>
+      )}
+
       {memberStats.length > 0 && (
         <Paper p="lg" withBorder>
-          <Title order={3} mb="md">Group Statistics</Title>
+          <Title order={3} mb="md">All-Time Statistics</Title>
 
           {/* Desktop Table View */}
           <Box style={{ overflowX: 'auto' }} visibleFrom="sm">
             <Table>
               <Table.Thead>
                 <Table.Tr>
+                  <Table.Th>Rank</Table.Th>
                   <Table.Th>Member</Table.Th>
                   <Table.Th>Total Points</Table.Th>
                   <Table.Th>Logged Food</Table.Th>
@@ -194,8 +337,14 @@ export default function AppPage() {
               <Table.Tbody>
                 {memberStats
                   .sort((a, b) => b.stats.total_points - a.stats.total_points)
-                  .map((member) => (
+                  .map((member, index) => (
                     <Table.Tr key={member.userId}>
+                      <Table.Td>
+                        <Group gap="xs">
+                          {getRankIcon(index + 1)}
+                          {getRankBadge(index + 1)}
+                        </Group>
+                      </Table.Td>
                       <Table.Td>
                         <Text fw={500}>{member.userName}</Text>
                       </Table.Td>
@@ -243,9 +392,16 @@ export default function AppPage() {
             {memberStats
               .sort((a, b) => b.stats.total_points - a.stats.total_points)
               .map((member, index) => (
-                <Paper key={member.userId} p="md" withBorder style={{ backgroundColor: index === 0 ? '#f0f7ff' : undefined }}>
+                <Paper key={member.userId} p="md" withBorder style={{ backgroundColor: index === 0 ? '#fff9e6' : index === 1 ? '#f5f5f5' : index === 2 ? '#fff4e6' : undefined }}>
+                  <Group justify="space-between" mb="xs">
+                    <Group gap="xs">
+                      {getRankIcon(index + 1)}
+                      <Text fw={600} size="lg">{member.userName}</Text>
+                    </Group>
+                    {getRankBadge(index + 1)}
+                  </Group>
                   <Group justify="space-between" mb="sm">
-                    <Text fw={600} size="lg">{member.userName}</Text>
+                    <Text size="sm" c="dimmed">Total Points</Text>
                     <Text fw={700} c="blue" size="xl">{member.stats.total_points} pts</Text>
                   </Group>
                   <Stack gap="xs">
