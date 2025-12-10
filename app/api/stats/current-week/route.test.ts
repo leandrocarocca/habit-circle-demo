@@ -421,5 +421,84 @@ describe('Current Week Stats Logic', () => {
         expect(dailyLogsMap[day]).toBeNull();
       });
     });
+
+    it('should show gym_session only on Tuesday, Thursday, and Saturday when checked on those days', () => {
+      const { weekStart } = getWeekRange('2024-12-09');
+
+      // Create logs only for Tuesday, Thursday, and Saturday with gym_session checked
+      const weekLogs: DailyLog[] = [
+        {
+          user_id: 1,
+          log_date: '2024-12-10', // Tuesday
+          checkbox_states: { gym_session: true },
+          is_completed: true,
+        },
+        {
+          user_id: 1,
+          log_date: '2024-12-12', // Thursday
+          checkbox_states: { gym_session: true },
+          is_completed: true,
+        },
+        {
+          user_id: 1,
+          log_date: '2024-12-14', // Saturday
+          checkbox_states: { gym_session: true },
+          is_completed: true,
+        },
+      ];
+
+      // Create daily logs map (same logic as in the API endpoint)
+      const dailyLogsMap: Record<string, DailyLog | null> = {};
+      const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+      for (let i = 0; i < 7; i++) {
+        const date = new Date(weekStart);
+        date.setDate(weekStart.getDate() + i);
+        const dateStr = formatDateLocal(date);
+        const log = weekLogs.find(l => l.log_date === dateStr);
+        dailyLogsMap[days[i]] = log || null;
+      }
+
+      // Verify Tuesday has gym_session checked
+      expect(dailyLogsMap.Tuesday).not.toBeNull();
+      expect(dailyLogsMap.Tuesday?.checkbox_states.gym_session).toBe(true);
+      expect(dailyLogsMap.Tuesday?.log_date).toBe('2024-12-10');
+
+      // Verify Thursday has gym_session checked
+      expect(dailyLogsMap.Thursday).not.toBeNull();
+      expect(dailyLogsMap.Thursday?.checkbox_states.gym_session).toBe(true);
+      expect(dailyLogsMap.Thursday?.log_date).toBe('2024-12-12');
+
+      // Verify Saturday has gym_session checked
+      expect(dailyLogsMap.Saturday).not.toBeNull();
+      expect(dailyLogsMap.Saturday?.checkbox_states.gym_session).toBe(true);
+      expect(dailyLogsMap.Saturday?.log_date).toBe('2024-12-14');
+
+      // Verify all other days are empty (null)
+      expect(dailyLogsMap.Monday).toBeNull();
+      expect(dailyLogsMap.Wednesday).toBeNull();
+      expect(dailyLogsMap.Friday).toBeNull();
+      expect(dailyLogsMap.Sunday).toBeNull();
+
+      // Extract checked checkboxes for each day (frontend display logic)
+      const getCheckedBoxes = (day: string) => {
+        const dayLog = dailyLogsMap[day];
+        if (!dayLog) return [];
+        return Object.keys(dayLog.checkbox_states).filter(
+          key => dayLog.checkbox_states[key] === true
+        );
+      };
+
+      // Verify frontend display: Tuesday, Thursday, Saturday should show gym_session
+      expect(getCheckedBoxes('Tuesday')).toContain('gym_session');
+      expect(getCheckedBoxes('Thursday')).toContain('gym_session');
+      expect(getCheckedBoxes('Saturday')).toContain('gym_session');
+
+      // Verify frontend display: Other days should show nothing
+      expect(getCheckedBoxes('Monday')).toEqual([]);
+      expect(getCheckedBoxes('Wednesday')).toEqual([]);
+      expect(getCheckedBoxes('Friday')).toEqual([]);
+      expect(getCheckedBoxes('Sunday')).toEqual([]);
+    });
   });
 });
