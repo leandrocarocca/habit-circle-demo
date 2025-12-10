@@ -413,13 +413,21 @@ export default function AppPage() {
                           key => checkboxStates[key] === true
                         );
 
-                        // Emoji mapping for checkboxes (mobile-friendly)
+                        // Emoji and label mapping for checkboxes (mobile-friendly)
                         const checkboxEmojis: Record<string, string> = {
                           'logged_food': '🍽️',
                           'within_calorie_limit': '🎯',
                           'protein_goal_met': '💪',
                           'no_cheat_foods': '✨',
                           'gym_session': '🏋️',
+                        };
+
+                        const checkboxLabels: Record<string, string> = {
+                          'logged_food': 'Food',
+                          'within_calorie_limit': 'Calories',
+                          'protein_goal_met': 'Protein',
+                          'no_cheat_foods': 'No Cheat',
+                          'gym_session': 'Gym',
                         };
 
                         return (
@@ -439,8 +447,8 @@ export default function AppPage() {
                             {hasData ? (
                               <Stack gap={2} align="center">
                                 {checkedBoxes.map((checkboxName) => (
-                                  <Text key={checkboxName} size="sm" style={{ lineHeight: 1.2 }}>
-                                    {checkboxEmojis[checkboxName] || '✓'}
+                                  <Text key={checkboxName} size="xs" style={{ lineHeight: 1.2 }}>
+                                    {checkboxEmojis[checkboxName] || '✓'} {checkboxLabels[checkboxName] || checkboxName}
                                   </Text>
                                 ))}
                                 {checkedBoxes.length === 0 && (
