@@ -38,15 +38,18 @@ interface FoodItem {
 }
 
 const CATEGORIES = [
+  { value: 'meat', label: 'Meat' },
+  { value: 'chicken', label: 'Chicken' },
   { value: 'vegetables', label: 'Vegetables' },
   { value: 'fruits', label: 'Fruits' },
-  { value: 'grains', label: 'Grains' },
-  { value: 'protein', label: 'Protein' },
+  { value: 'toppings_on_bread', label: 'Toppings on bread' },
+  { value: 'cheese', label: 'Cheese' },
+  { value: 'frozen_food', label: 'Frozen food' },
+  { value: 'bread', label: 'Bread' },
+  { value: 'pantry', label: 'Pantry' },
+  { value: 'carbs', label: 'Carbs' },
+  { value: 'cooking_fat', label: 'Cooking fat' },
   { value: 'dairy', label: 'Dairy' },
-  { value: 'fats_oils', label: 'Fats & Oils' },
-  { value: 'beverages', label: 'Beverages' },
-  { value: 'snacks', label: 'Snacks' },
-  { value: 'condiments', label: 'Condiments' },
   { value: 'other', label: 'Other' },
 ];
 

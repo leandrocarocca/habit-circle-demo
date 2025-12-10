@@ -85,8 +85,9 @@ export async function PUT(
     }
 
     const validCategories = [
-      'vegetables', 'fruits', 'grains', 'protein', 'dairy',
-      'fats_oils', 'beverages', 'snacks', 'condiments', 'other'
+      'meat', 'chicken', 'vegetables', 'fruits', 'toppings_on_bread',
+      'cheese', 'frozen_food', 'bread', 'pantry', 'carbs',
+      'cooking_fat', 'dairy', 'other'
     ];
 
     if (!validCategories.includes(category)) {
