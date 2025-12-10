@@ -298,28 +298,13 @@ export default function AppPage() {
                         <Text fw={700} c="blue">{member.stats.total_points}</Text>
                       </Table.Td>
                       <Table.Td>
-                        <Stack gap={0}>
-                          <Text size="sm">{member.stats.logged_food.total} days</Text>
-                          <Text size="xs" c="dimmed">
-                            {member.stats.logged_food.current_streak} streak
-                          </Text>
-                        </Stack>
+                        <Text size="sm">{member.stats.logged_food.total} days</Text>
                       </Table.Td>
                       <Table.Td>
-                        <Stack gap={0}>
-                          <Text size="sm">{member.stats.calorie_limit.total} days</Text>
-                          <Text size="xs" c="dimmed">
-                            {member.stats.calorie_limit.current_streak} streak
-                          </Text>
-                        </Stack>
+                        <Text size="sm">{member.stats.calorie_limit.total} days</Text>
                       </Table.Td>
                       <Table.Td>
-                        <Stack gap={0}>
-                          <Text size="sm">{member.stats.protein_goal.total} days</Text>
-                          <Text size="xs" c="dimmed">
-                            {member.stats.protein_goal.current_streak} streak
-                          </Text>
-                        </Stack>
+                        <Text size="sm">{member.stats.protein_goal.total} days</Text>
                       </Table.Td>
                       <Table.Td>
                         <Text size="sm">{member.stats.cheat_days.total} days</Text>
@@ -353,15 +338,15 @@ export default function AppPage() {
                   <Stack gap="xs">
                     <Group justify="space-between">
                       <Text size="sm" c="dimmed">Logged Food</Text>
-                      <Text size="sm">{member.stats.logged_food.total} days ({member.stats.logged_food.current_streak} streak)</Text>
+                      <Text size="sm">{member.stats.logged_food.total} days</Text>
                     </Group>
                     <Group justify="space-between">
                       <Text size="sm" c="dimmed">Calorie Limit</Text>
-                      <Text size="sm">{member.stats.calorie_limit.total} days ({member.stats.calorie_limit.current_streak} streak)</Text>
+                      <Text size="sm">{member.stats.calorie_limit.total} days</Text>
                     </Group>
                     <Group justify="space-between">
                       <Text size="sm" c="dimmed">Protein Goal</Text>
-                      <Text size="sm">{member.stats.protein_goal.total} days ({member.stats.protein_goal.current_streak} streak)</Text>
+                      <Text size="sm">{member.stats.protein_goal.total} days</Text>
                     </Group>
                     <Group justify="space-between">
                       <Text size="sm" c="dimmed">Days Cheated</Text>
