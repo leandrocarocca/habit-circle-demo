@@ -24,6 +24,7 @@ export async function GET(request: Request) {
         fi.protein_per_100g,
         fi.fat_per_100g,
         fi.carbs_per_100g,
+        fi.sugar_per_100g,
         fi.calories_per_100g,
         fi.created_at,
         fi.updated_at,
@@ -90,6 +91,7 @@ export async function POST(request: Request) {
       protein_per_100g,
       fat_per_100g,
       carbs_per_100g,
+      sugar_per_100g,
       calories_per_100g,
       portions = []
     } = body;
@@ -119,11 +121,11 @@ export async function POST(request: Request) {
     const foodItemResult = await pool.query(
       `INSERT INTO food_items (
         name, brand, category, protein_per_100g, fat_per_100g,
-        carbs_per_100g, calories_per_100g
+        carbs_per_100g, sugar_per_100g, calories_per_100g
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING id, name, brand, category, protein_per_100g, fat_per_100g,
-                carbs_per_100g, calories_per_100g, created_at, updated_at`,
+                carbs_per_100g, sugar_per_100g, calories_per_100g, created_at, updated_at`,
       [
         name,
         brand || null,
@@ -131,6 +133,7 @@ export async function POST(request: Request) {
         protein_per_100g || 0,
         fat_per_100g || 0,
         carbs_per_100g || 0,
+        sugar_per_100g || 0,
         calories_per_100g || 0
       ]
     );
@@ -159,7 +162,7 @@ export async function POST(request: Request) {
     const result = await pool.query(
       `SELECT
         fi.id, fi.name, fi.brand, fi.category, fi.protein_per_100g,
-        fi.fat_per_100g, fi.carbs_per_100g, fi.calories_per_100g,
+        fi.fat_per_100g, fi.carbs_per_100g, fi.sugar_per_100g, fi.calories_per_100g,
         fi.created_at, fi.updated_at,
         COALESCE(
           json_agg(

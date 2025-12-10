@@ -33,6 +33,7 @@ interface FoodItem {
   protein_per_100g: number;
   fat_per_100g: number;
   carbs_per_100g: number;
+  sugar_per_100g: number;
   calories_per_100g: number;
   portions: Portion[];
 }
@@ -193,7 +194,7 @@ export default function FoodItemsPage() {
                           </div>
                           <Text size="sm" c="dimmed">
                             P: {item.protein_per_100g}g | F: {item.fat_per_100g}g | C:{' '}
-                            {item.carbs_per_100g}g
+                            {item.carbs_per_100g}g | S: {item.sugar_per_100g}g
                           </Text>
                         </Group>
                       </Card>

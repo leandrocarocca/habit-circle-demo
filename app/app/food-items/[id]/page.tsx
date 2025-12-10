@@ -33,6 +33,7 @@ interface FoodItem {
   protein_per_100g: number;
   fat_per_100g: number;
   carbs_per_100g: number;
+  sugar_per_100g: number;
   calories_per_100g: number;
   portions: Portion[];
 }
@@ -80,6 +81,7 @@ export default function FoodItemDetailPage() {
     protein_per_100g: 0,
     fat_per_100g: 0,
     carbs_per_100g: 0,
+    sugar_per_100g: 0,
     calories_per_100g: 0,
     portions: [],
   });
@@ -306,6 +308,18 @@ export default function FoodItemDetailPage() {
               decimalScale={2}
             />
 
+            <NumberInput
+              label="Sugar (g)"
+              value={formData.sugar_per_100g}
+              onChange={(value) =>
+                setFormData({ ...formData, sugar_per_100g: Number(value) })
+              }
+              min={0}
+              decimalScale={2}
+            />
+          </Group>
+
+          <Group grow>
             <NumberInput
               label="Calories"
               value={formData.calories_per_100g}
