@@ -11,6 +11,7 @@ import {
   IconClipboardList,
   IconCalendar,
   IconUsers,
+  IconApple,
 } from '@tabler/icons-react';
 
 export function AppShellLayout({ children }: { children: React.ReactNode }) {
@@ -27,6 +28,7 @@ export function AppShellLayout({ children }: { children: React.ReactNode }) {
     { href: '/app/logging', label: 'Log', icon: IconClipboardList },
     { href: '/app/calendar', label: 'Calendar', icon: IconCalendar },
     { href: '/app/groups', label: 'Groups', icon: IconUsers },
+    { href: '/app/food-items', label: 'Food', icon: IconApple },
     { href: '/app/settings', label: 'Settings', icon: IconSettings },
   ];
 
@@ -82,6 +84,11 @@ export function AppShellLayout({ children }: { children: React.ReactNode }) {
           href="/app/groups"
           label="Groups"
           leftSection={<IconUsers size={16} />}
+        />
+        <NavLink
+          href="/app/food-items"
+          label="Food Items"
+          leftSection={<IconApple size={16} />}
         />
         <NavLink
           href="/app/settings"
