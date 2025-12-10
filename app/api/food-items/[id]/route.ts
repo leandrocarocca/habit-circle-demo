@@ -17,7 +17,7 @@ export async function GET(
 
     const result = await pool.query(
       `SELECT
-        fi.id, fi.name, fi.category, fi.protein_per_100g,
+        fi.id, fi.name, fi.brand, fi.category, fi.protein_per_100g,
         fi.fat_per_100g, fi.carbs_per_100g, fi.calories_per_100g,
         fi.created_at, fi.updated_at,
         COALESCE(
@@ -68,6 +68,7 @@ export async function PUT(
     const body = await request.json();
     const {
       name,
+      brand,
       category,
       protein_per_100g,
       fat_per_100g,
@@ -99,12 +100,13 @@ export async function PUT(
 
     const updateResult = await pool.query(
       `UPDATE food_items
-       SET name = $1, category = $2, protein_per_100g = $3,
-           fat_per_100g = $4, carbs_per_100g = $5, calories_per_100g = $6
-       WHERE id = $7
+       SET name = $1, brand = $2, category = $3, protein_per_100g = $4,
+           fat_per_100g = $5, carbs_per_100g = $6, calories_per_100g = $7
+       WHERE id = $8
        RETURNING id`,
       [
         name,
+        brand || null,
         category,
         protein_per_100g || 0,
         fat_per_100g || 0,
@@ -147,7 +149,7 @@ export async function PUT(
 
     const result = await pool.query(
       `SELECT
-        fi.id, fi.name, fi.category, fi.protein_per_100g,
+        fi.id, fi.name, fi.brand, fi.category, fi.protein_per_100g,
         fi.fat_per_100g, fi.carbs_per_100g, fi.calories_per_100g,
         fi.created_at, fi.updated_at,
         COALESCE(

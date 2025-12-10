@@ -28,6 +28,7 @@ interface Portion {
 interface FoodItem {
   id?: number;
   name: string;
+  brand?: string;
   category: string;
   protein_per_100g: number;
   fat_per_100g: number;
@@ -71,6 +72,7 @@ export default function FoodItemDetailPage() {
 
   const [formData, setFormData] = useState<FoodItem>({
     name: '',
+    brand: '',
     category: 'other',
     protein_per_100g: 0,
     fat_per_100g: 0,
@@ -245,6 +247,15 @@ export default function FoodItemDetailPage() {
               setFormData({ ...formData, name: e.currentTarget.value })
             }
             required
+          />
+
+          <TextInput
+            label="Brand"
+            placeholder="e.g., Kirkland (optional)"
+            value={formData.brand || ''}
+            onChange={(e) =>
+              setFormData({ ...formData, brand: e.currentTarget.value })
+            }
           />
 
           <Select

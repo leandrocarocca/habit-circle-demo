@@ -28,6 +28,7 @@ interface Portion {
 interface FoodItem {
   id: number;
   name: string;
+  brand?: string;
   category: string;
   protein_per_100g: number;
   fat_per_100g: number;
@@ -178,6 +179,11 @@ export default function FoodItemsPage() {
                         <Group justify="space-between">
                           <div>
                             <Text fw={500}>{item.name}</Text>
+                            {item.brand && (
+                              <Text size="xs" c="dimmed">
+                                {item.brand}
+                              </Text>
+                            )}
                             <Text size="sm" c="dimmed">
                               {item.calories_per_100g} cal per 100g
                             </Text>
