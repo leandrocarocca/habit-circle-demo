@@ -12,7 +12,7 @@ vi.mock('@neondatabase/serverless', () => ({
   },
 }));
 
-describe('DELETE /api/meals/[mealId]/food-items/[foodItemId]', () => {
+describe('DELETE /api/meals/[id]/food-items/[foodItemId]', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -24,7 +24,7 @@ describe('DELETE /api/meals/[mealId]/food-items/[foodItemId]', () => {
     const request = new NextRequest('http://localhost:3000/api/meals/1/food-items/1', {
       method: 'DELETE',
     });
-    const params = Promise.resolve({ mealId: '1', foodItemId: '1' });
+    const params = Promise.resolve({ id: '1', foodItemId: '1' });
     const response = await DELETE(request, { params });
 
     expect(response.status).toBe(401);

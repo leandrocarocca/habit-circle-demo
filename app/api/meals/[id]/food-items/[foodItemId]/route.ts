@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Pool } from '@neondatabase/serverless';
 import { auth } from '@/auth';
 
-// DELETE /api/meals/[mealId]/food-items/[foodItemId] - Remove a food item from a meal
+// DELETE /api/meals/[id]/food-items/[foodItemId] - Remove a food item from a meal
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ mealId: string; foodItemId: string }> }
+  { params }: { params: Promise<{ id: string; foodItemId: string }> }
 ) {
   try {
     const session = await auth();
@@ -13,7 +13,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { mealId, foodItemId } = await params;
+    const { id: mealId, foodItemId } = await params;
     const pool = new Pool({ connectionString: process.env.POSTGRES_URL });
 
     // Verify the meal belongs to the user before deleting
