@@ -12,6 +12,7 @@ import {
   IconCalendar,
   IconUsers,
   IconApple,
+  IconChartBar,
 } from '@tabler/icons-react';
 
 export function AppShellLayout({ children }: { children: React.ReactNode }) {
@@ -29,6 +30,7 @@ export function AppShellLayout({ children }: { children: React.ReactNode }) {
     { href: '/app/calendar', label: 'Calendar', icon: IconCalendar },
     { href: '/app/groups', label: 'Groups', icon: IconUsers },
     { href: '/app/food-items', label: 'Food', icon: IconApple },
+    { href: '/app/calorie-tracking', label: 'Calorie tracking', icon: IconChartBar },
     { href: '/app/settings', label: 'Settings', icon: IconSettings },
   ];
 
