@@ -108,6 +108,7 @@ export default function CalorieTrackingPage() {
   const [mealName, setMealName] = useState('');
   const [editingMealId, setEditingMealId] = useState<number | null>(null);
   const [selectedMealForFood, setSelectedMealForFood] = useState<number | null>(null);
+  const [showDetails, setShowDetails] = useState(false);
 
   // Food item selection state
   const [foodItems, setFoodItems] = useState<FoodItem[]>([]);
@@ -482,6 +483,13 @@ export default function CalorieTrackingPage() {
     <Stack gap="md">
       <Group justify="space-between">
         <Title order={2}>Calorie Tracking</Title>
+        <Button
+          variant="light"
+          size="xs"
+          onClick={() => setShowDetails(!showDetails)}
+        >
+          {showDetails ? 'Hide Details' : 'Show Details'}
+        </Button>
       </Group>
 
       {/* Date navigation */}
@@ -608,23 +616,29 @@ export default function CalorieTrackingPage() {
                 </Group>
 
                 {/* Meal totals */}
-                <Group gap="md" mb="md">
-                  <Text size="sm" c="blue" fw={500}>
+                {showDetails ? (
+                  <Group gap="md" mb="md">
+                    <Text size="sm" c="blue" fw={500}>
+                      {Math.round(mealTotals.calories)} cal
+                    </Text>
+                    <Text size="sm" c="dimmed">
+                      P: {Math.round(mealTotals.protein)}g
+                    </Text>
+                    <Text size="sm" c="dimmed">
+                      C: {Math.round(mealTotals.carbs)}g
+                    </Text>
+                    <Text size="sm" c="dimmed">
+                      F: {Math.round(mealTotals.fat)}g
+                    </Text>
+                    <Text size="sm" c="dimmed">
+                      S: {Math.round(mealTotals.sugar)}g
+                    </Text>
+                  </Group>
+                ) : (
+                  <Text size="sm" c="blue" fw={500} mb="md">
                     {Math.round(mealTotals.calories)} cal
                   </Text>
-                  <Text size="sm" c="dimmed">
-                    P: {Math.round(mealTotals.protein)}g
-                  </Text>
-                  <Text size="sm" c="dimmed">
-                    C: {Math.round(mealTotals.carbs)}g
-                  </Text>
-                  <Text size="sm" c="dimmed">
-                    F: {Math.round(mealTotals.fat)}g
-                  </Text>
-                  <Text size="sm" c="dimmed">
-                    S: {Math.round(mealTotals.sugar)}g
-                  </Text>
-                </Group>
+                )}
 
               {/* Food items in meal */}
               {meal.food_items.length === 0 ? (
@@ -650,23 +664,29 @@ export default function CalorieTrackingPage() {
                             {foodItem.portion_count} × {getPortionTypeLabel(foodItem.portion_type)} (
                             {foodItem.portion_grams}g)
                           </Text>
-                          <Group gap="xs" mt={4}>
-                            <Text size="xs" c="blue" fw={500}>
+                          {showDetails ? (
+                            <Group gap="xs" mt={4}>
+                              <Text size="xs" c="blue" fw={500}>
+                                {Math.round(macros.calories)} cal
+                              </Text>
+                              <Text size="xs" c="dimmed">
+                                P: {Math.round(macros.protein)}g
+                              </Text>
+                              <Text size="xs" c="dimmed">
+                                C: {Math.round(macros.carbs)}g
+                              </Text>
+                              <Text size="xs" c="dimmed">
+                                F: {Math.round(macros.fat)}g
+                              </Text>
+                              <Text size="xs" c="dimmed">
+                                S: {Math.round(macros.sugar)}g
+                              </Text>
+                            </Group>
+                          ) : (
+                            <Text size="xs" c="blue" fw={500} mt={4}>
                               {Math.round(macros.calories)} cal
                             </Text>
-                            <Text size="xs" c="dimmed">
-                              P: {Math.round(macros.protein)}g
-                            </Text>
-                            <Text size="xs" c="dimmed">
-                              C: {Math.round(macros.carbs)}g
-                            </Text>
-                            <Text size="xs" c="dimmed">
-                              F: {Math.round(macros.fat)}g
-                            </Text>
-                            <Text size="xs" c="dimmed">
-                              S: {Math.round(macros.sugar)}g
-                            </Text>
-                          </Group>
+                          )}
                         </div>
                         <ActionIcon
                           onClick={() => handleRemoveFoodFromMeal(meal.id, foodItem.id)}
