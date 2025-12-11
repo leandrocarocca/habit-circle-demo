@@ -425,6 +425,59 @@ export default function CalorieTrackingPage() {
     return PORTION_TYPES.find((p) => p.value === value)?.label || value;
   };
 
+  // Calculate calories for a food item
+  const calculateFoodItemCalories = (foodItem: MealFoodItem) => {
+    return (foodItem.portion_grams * foodItem.portion_count * foodItem.calories_per_100g) / 100;
+  };
+
+  // Calculate macros for a food item
+  const calculateFoodItemMacros = (foodItem: MealFoodItem) => {
+    const grams = foodItem.portion_grams * foodItem.portion_count;
+    return {
+      protein: (grams * foodItem.protein_per_100g) / 100,
+      fat: (grams * foodItem.fat_per_100g) / 100,
+      carbs: (grams * foodItem.carbs_per_100g) / 100,
+      sugar: (grams * foodItem.sugar_per_100g) / 100,
+      calories: (grams * foodItem.calories_per_100g) / 100,
+    };
+  };
+
+  // Calculate totals for a meal
+  const calculateMealTotals = (meal: Meal) => {
+    return meal.food_items.reduce(
+      (totals, foodItem) => {
+        const macros = calculateFoodItemMacros(foodItem);
+        return {
+          protein: totals.protein + macros.protein,
+          fat: totals.fat + macros.fat,
+          carbs: totals.carbs + macros.carbs,
+          sugar: totals.sugar + macros.sugar,
+          calories: totals.calories + macros.calories,
+        };
+      },
+      { protein: 0, fat: 0, carbs: 0, sugar: 0, calories: 0 }
+    );
+  };
+
+  // Calculate totals for the day
+  const calculateDayTotals = () => {
+    return meals.reduce(
+      (totals, meal) => {
+        const mealTotals = calculateMealTotals(meal);
+        return {
+          protein: totals.protein + mealTotals.protein,
+          fat: totals.fat + mealTotals.fat,
+          carbs: totals.carbs + mealTotals.carbs,
+          sugar: totals.sugar + mealTotals.sugar,
+          calories: totals.calories + mealTotals.calories,
+        };
+      },
+      { protein: 0, fat: 0, carbs: 0, sugar: 0, calories: 0 }
+    );
+  };
+
+  const dayTotals = calculateDayTotals();
+
   return (
     <Stack gap="md">
       <Group justify="space-between">
@@ -458,6 +511,56 @@ export default function CalorieTrackingPage() {
         )}
       </Paper>
 
+      {/* Daily summary */}
+      {meals.length > 0 && (
+        <Paper p="md" withBorder style={{ backgroundColor: '#f8f9fa' }}>
+          <Stack gap="md">
+            <div>
+              <Text size="xl" fw={700} ta="center" c="blue">
+                {Math.round(dayTotals.calories)} calories
+              </Text>
+              <Text size="xs" c="dimmed" ta="center">
+                Total for the day
+              </Text>
+            </div>
+            <Group justify="space-around">
+              <div style={{ textAlign: 'center' }}>
+                <Text size="lg" fw={600} c="blue">
+                  {Math.round(dayTotals.protein)}g
+                </Text>
+                <Text size="xs" c="dimmed">
+                  Protein
+                </Text>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <Text size="lg" fw={600} c="orange">
+                  {Math.round(dayTotals.carbs)}g
+                </Text>
+                <Text size="xs" c="dimmed">
+                  Carbs
+                </Text>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <Text size="lg" fw={600} c="yellow">
+                  {Math.round(dayTotals.fat)}g
+                </Text>
+                <Text size="xs" c="dimmed">
+                  Fat
+                </Text>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <Text size="lg" fw={600} c="pink">
+                  {Math.round(dayTotals.sugar)}g
+                </Text>
+                <Text size="xs" c="dimmed">
+                  Sugar
+                </Text>
+              </div>
+            </Group>
+          </Stack>
+        </Paper>
+      )}
+
       {/* Add meal button */}
       <Button
         leftSection={<IconPlus size={16} />}
@@ -478,29 +581,36 @@ export default function CalorieTrackingPage() {
         </Paper>
       ) : (
         <Stack gap="md">
-          {meals.map((meal) => (
-            <Paper key={meal.id} p="md" withBorder>
-              <Group justify="space-between" mb="md">
-                <Text fw={500} size="lg">
-                  {meal.name}
-                </Text>
-                <Group gap="xs">
-                  <ActionIcon
-                    onClick={() => openEditMealModal(meal)}
-                    variant="subtle"
-                    color="blue"
-                  >
-                    <IconEdit size={18} />
-                  </ActionIcon>
-                  <ActionIcon
-                    onClick={() => handleDeleteMeal(meal.id)}
-                    variant="subtle"
-                    color="red"
-                  >
-                    <IconTrash size={18} />
-                  </ActionIcon>
+          {meals.map((meal) => {
+            const mealTotals = calculateMealTotals(meal);
+            return (
+              <Paper key={meal.id} p="md" withBorder>
+                <Group justify="space-between" mb="md">
+                  <div>
+                    <Text fw={500} size="lg">
+                      {meal.name}
+                    </Text>
+                    <Text size="sm" c="blue" fw={500}>
+                      {Math.round(mealTotals.calories)} cal
+                    </Text>
+                  </div>
+                  <Group gap="xs">
+                    <ActionIcon
+                      onClick={() => openEditMealModal(meal)}
+                      variant="subtle"
+                      color="blue"
+                    >
+                      <IconEdit size={18} />
+                    </ActionIcon>
+                    <ActionIcon
+                      onClick={() => handleDeleteMeal(meal.id)}
+                      variant="subtle"
+                      color="red"
+                    >
+                      <IconTrash size={18} />
+                    </ActionIcon>
+                  </Group>
                 </Group>
-              </Group>
 
               {/* Food items in meal */}
               {meal.food_items.length === 0 ? (
@@ -509,32 +619,38 @@ export default function CalorieTrackingPage() {
                 </Text>
               ) : (
                 <Stack gap="xs" mb="sm">
-                  {meal.food_items.map((foodItem) => (
-                    <Group key={foodItem.id} justify="space-between">
-                      <div>
-                        <Text size="sm" fw={500}>
-                          {foodItem.food_item_name}
-                          {foodItem.food_item_brand && (
-                            <Text span size="sm" c="dimmed" ml={4}>
-                              ({foodItem.food_item_brand})
-                            </Text>
-                          )}
-                        </Text>
-                        <Text size="xs" c="dimmed">
-                          {foodItem.portion_count} × {getPortionTypeLabel(foodItem.portion_type)} (
-                          {foodItem.portion_grams}g)
-                        </Text>
-                      </div>
-                      <ActionIcon
-                        onClick={() => handleRemoveFoodFromMeal(meal.id, foodItem.id)}
-                        variant="subtle"
-                        color="red"
-                        size="sm"
-                      >
-                        <IconTrash size={14} />
-                      </ActionIcon>
-                    </Group>
-                  ))}
+                  {meal.food_items.map((foodItem) => {
+                    const calories = calculateFoodItemCalories(foodItem);
+                    return (
+                      <Group key={foodItem.id} justify="space-between" align="flex-start">
+                        <div style={{ flex: 1 }}>
+                          <Text size="sm" fw={500}>
+                            {foodItem.food_item_name}
+                            {foodItem.food_item_brand && (
+                              <Text span size="sm" c="dimmed" ml={4}>
+                                ({foodItem.food_item_brand})
+                              </Text>
+                            )}
+                          </Text>
+                          <Text size="xs" c="dimmed">
+                            {foodItem.portion_count} × {getPortionTypeLabel(foodItem.portion_type)} (
+                            {foodItem.portion_grams}g)
+                          </Text>
+                          <Text size="xs" c="blue" fw={500}>
+                            {Math.round(calories)} cal
+                          </Text>
+                        </div>
+                        <ActionIcon
+                          onClick={() => handleRemoveFoodFromMeal(meal.id, foodItem.id)}
+                          variant="subtle"
+                          color="red"
+                          size="sm"
+                        >
+                          <IconTrash size={14} />
+                        </ActionIcon>
+                      </Group>
+                    );
+                  })}
                 </Stack>
               )}
 
@@ -547,8 +663,9 @@ export default function CalorieTrackingPage() {
               >
                 Add Food Item
               </Button>
-            </Paper>
-          ))}
+              </Paper>
+            );
+          })}
         </Stack>
       )}
 
