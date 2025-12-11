@@ -140,14 +140,26 @@ export async function POST(request: Request) {
 
     const foodItem = foodItemResult.rows[0];
 
+    // Always insert default portions (1g and 100g)
+    await pool.query(
+      `INSERT INTO food_item_portions (food_item_id, portion_type, grams)
+       VALUES ($1, 'per_1g', 1), ($1, 'per_100g', 100)`,
+      [foodItem.id]
+    );
+
     if (portions && portions.length > 0) {
       const validPortionTypes = [
         'per_slice', 'per_portion', 'per_dl', 'per_cup',
-        'per_tablespoon', 'per_teaspoon', 'per_piece'
+        'per_tablespoon', 'per_teaspoon', 'per_piece', 'per_1g', 'per_100g'
       ];
 
       for (const portion of portions) {
         if (!validPortionTypes.includes(portion.portion_type)) {
+          continue;
+        }
+
+        // Skip default portions as they're already inserted
+        if (portion.portion_type === 'per_1g' || portion.portion_type === 'per_100g') {
           continue;
         }
 

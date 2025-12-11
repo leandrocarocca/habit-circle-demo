@@ -134,7 +134,7 @@ export async function PUT(
     if (portions && portions.length > 0) {
       const validPortionTypes = [
         'per_slice', 'per_portion', 'per_dl', 'per_cup',
-        'per_tablespoon', 'per_teaspoon', 'per_piece'
+        'per_tablespoon', 'per_teaspoon', 'per_piece', 'per_1g', 'per_100g'
       ];
 
       for (const portion of portions) {

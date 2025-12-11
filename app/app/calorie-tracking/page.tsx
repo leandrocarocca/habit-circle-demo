@@ -87,6 +87,8 @@ const CATEGORIES = [
 ];
 
 const PORTION_TYPES = [
+  { value: 'per_1g', label: 'Per 1 gram' },
+  { value: 'per_100g', label: 'Per 100 grams' },
   { value: 'per_slice', label: 'Per slice' },
   { value: 'per_portion', label: 'Per portion' },
   { value: 'per_dl', label: 'Per dl' },

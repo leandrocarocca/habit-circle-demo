@@ -9,7 +9,9 @@ const VALID_PORTION_TYPES = [
   'per_cup',
   'per_tablespoon',
   'per_teaspoon',
-  'per_piece'
+  'per_piece',
+  'per_1g',
+  'per_100g'
 ];
 
 // POST /api/meals/[id]/food-items - Add a food item to a meal
