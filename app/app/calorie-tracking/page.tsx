@@ -585,15 +585,10 @@ export default function CalorieTrackingPage() {
             const mealTotals = calculateMealTotals(meal);
             return (
               <Paper key={meal.id} p="md" withBorder>
-                <Group justify="space-between" mb="md">
-                  <div>
-                    <Text fw={500} size="lg">
-                      {meal.name}
-                    </Text>
-                    <Text size="sm" c="blue" fw={500}>
-                      {Math.round(mealTotals.calories)} cal
-                    </Text>
-                  </div>
+                <Group justify="space-between" mb="xs">
+                  <Text fw={500} size="lg">
+                    {meal.name}
+                  </Text>
                   <Group gap="xs">
                     <ActionIcon
                       onClick={() => openEditMealModal(meal)}
@@ -612,6 +607,25 @@ export default function CalorieTrackingPage() {
                   </Group>
                 </Group>
 
+                {/* Meal totals */}
+                <Group gap="md" mb="md">
+                  <Text size="sm" c="blue" fw={500}>
+                    {Math.round(mealTotals.calories)} cal
+                  </Text>
+                  <Text size="sm" c="dimmed">
+                    P: {Math.round(mealTotals.protein)}g
+                  </Text>
+                  <Text size="sm" c="dimmed">
+                    C: {Math.round(mealTotals.carbs)}g
+                  </Text>
+                  <Text size="sm" c="dimmed">
+                    F: {Math.round(mealTotals.fat)}g
+                  </Text>
+                  <Text size="sm" c="dimmed">
+                    S: {Math.round(mealTotals.sugar)}g
+                  </Text>
+                </Group>
+
               {/* Food items in meal */}
               {meal.food_items.length === 0 ? (
                 <Text size="sm" c="dimmed" mb="sm">
@@ -620,7 +634,7 @@ export default function CalorieTrackingPage() {
               ) : (
                 <Stack gap="xs" mb="sm">
                   {meal.food_items.map((foodItem) => {
-                    const calories = calculateFoodItemCalories(foodItem);
+                    const macros = calculateFoodItemMacros(foodItem);
                     return (
                       <Group key={foodItem.id} justify="space-between" align="flex-start">
                         <div style={{ flex: 1 }}>
@@ -636,9 +650,23 @@ export default function CalorieTrackingPage() {
                             {foodItem.portion_count} × {getPortionTypeLabel(foodItem.portion_type)} (
                             {foodItem.portion_grams}g)
                           </Text>
-                          <Text size="xs" c="blue" fw={500}>
-                            {Math.round(calories)} cal
-                          </Text>
+                          <Group gap="xs" mt={4}>
+                            <Text size="xs" c="blue" fw={500}>
+                              {Math.round(macros.calories)} cal
+                            </Text>
+                            <Text size="xs" c="dimmed">
+                              P: {Math.round(macros.protein)}g
+                            </Text>
+                            <Text size="xs" c="dimmed">
+                              C: {Math.round(macros.carbs)}g
+                            </Text>
+                            <Text size="xs" c="dimmed">
+                              F: {Math.round(macros.fat)}g
+                            </Text>
+                            <Text size="xs" c="dimmed">
+                              S: {Math.round(macros.sugar)}g
+                            </Text>
+                          </Group>
                         </div>
                         <ActionIcon
                           onClick={() => handleRemoveFoodFromMeal(meal.id, foodItem.id)}
