@@ -13,6 +13,7 @@ import {
   IconUsers,
   IconApple,
   IconChartBar,
+  IconTemplate,
 } from '@tabler/icons-react';
 
 export function AppShellLayout({ children }: { children: React.ReactNode }) {
@@ -30,7 +31,8 @@ export function AppShellLayout({ children }: { children: React.ReactNode }) {
     { href: '/app/calendar', label: 'Calendar', icon: IconCalendar },
     { href: '/app/groups', label: 'Groups', icon: IconUsers },
     { href: '/app/food-items', label: 'Food', icon: IconApple },
-    { href: '/app/calorie-tracking', label: 'Calorie tracking', icon: IconChartBar },
+    { href: '/app/meal-templates', label: 'Templates', icon: IconTemplate },
+    { href: '/app/calorie-tracking', label: 'Calories', icon: IconChartBar },
     { href: '/app/settings', label: 'Settings', icon: IconSettings },
   ];
 
@@ -91,6 +93,16 @@ export function AppShellLayout({ children }: { children: React.ReactNode }) {
           href="/app/food-items"
           label="Food Items"
           leftSection={<IconApple size={16} />}
+        />
+        <NavLink
+          href="/app/meal-templates"
+          label="Meal Templates"
+          leftSection={<IconTemplate size={16} />}
+        />
+        <NavLink
+          href="/app/calorie-tracking"
+          label="Calorie Tracking"
+          leftSection={<IconChartBar size={16} />}
         />
         <NavLink
           href="/app/settings"

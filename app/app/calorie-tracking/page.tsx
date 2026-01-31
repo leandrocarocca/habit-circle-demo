@@ -23,6 +23,7 @@ import {
   IconPlus,
   IconTrash,
   IconEdit,
+  IconTemplate,
 } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 
@@ -70,6 +71,23 @@ interface Meal {
   food_items: MealFoodItem[];
 }
 
+interface TemplateItem {
+  id: number;
+  food_item_id: number;
+  food_item_name: string;
+  food_item_brand?: string;
+  portion_type: string;
+  portion_count: number;
+  portion_grams: number;
+  calories_per_100g: number;
+}
+
+interface MealTemplate {
+  id: number;
+  name: string;
+  items: TemplateItem[];
+}
+
 const CATEGORIES = [
   { value: 'meat', label: 'Meat' },
   { value: 'chicken', label: 'Chicken' },
@@ -109,6 +127,8 @@ export default function CalorieTrackingPage() {
   const [editingMealId, setEditingMealId] = useState<number | null>(null);
   const [selectedMealForFood, setSelectedMealForFood] = useState<number | null>(null);
   const [showDetails, setShowDetails] = useState(false);
+  const [templateModalOpened, setTemplateModalOpened] = useState(false);
+  const [templates, setTemplates] = useState<MealTemplate[]>([]);
 
   // Food item selection state
   const [foodItems, setFoodItems] = useState<FoodItem[]>([]);
@@ -399,6 +419,62 @@ export default function CalorieTrackingPage() {
     }
   };
 
+  const openTemplateModal = async () => {
+    try {
+      const response = await fetch('/api/meal-templates');
+      if (!response.ok) {
+        throw new Error('Failed to load templates');
+      }
+      const data = await response.json();
+      setTemplates(data);
+      setTemplateModalOpened(true);
+    } catch (error) {
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to load meal templates',
+        color: 'red',
+      });
+    }
+  };
+
+  const handleAddFromTemplate = async (templateId: number) => {
+    try {
+      const dateStr = formatDate(currentDate);
+      const response = await fetch('/api/meals/from-template', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ template_id: templateId, date: dateStr }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create meal from template');
+      }
+
+      const newMeal = await response.json();
+      setMeals([...meals, newMeal]);
+      setTemplateModalOpened(false);
+
+      notifications.show({
+        title: 'Success',
+        message: 'Meal added from template',
+        color: 'green',
+      });
+    } catch (error) {
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to add meal from template',
+        color: 'red',
+      });
+    }
+  };
+
+  // Calculate template calories
+  const calculateTemplateCalories = (template: MealTemplate) => {
+    return template.items.reduce((total, item) => {
+      return total + (item.portion_grams * item.portion_count * item.calories_per_100g) / 100;
+    }, 0);
+  };
+
   // Filter food items
   const filteredFoodItems = foodItems.filter((item) => {
     const matchesSearch =
@@ -569,14 +645,24 @@ export default function CalorieTrackingPage() {
         </Paper>
       )}
 
-      {/* Add meal button */}
-      <Button
-        leftSection={<IconPlus size={16} />}
-        onClick={openAddMealModal}
-        variant="light"
-      >
-        Add Meal
-      </Button>
+      {/* Add meal buttons */}
+      <Group>
+        <Button
+          leftSection={<IconPlus size={16} />}
+          onClick={openAddMealModal}
+          variant="light"
+        >
+          Add Meal
+        </Button>
+        <Button
+          leftSection={<IconTemplate size={16} />}
+          onClick={openTemplateModal}
+          variant="light"
+          color="teal"
+        >
+          Add from Template
+        </Button>
+      </Group>
 
       {/* Meals list */}
       {loading ? (
@@ -860,6 +946,49 @@ export default function CalorieTrackingPage() {
               </Group>
             </>
           )}
+        </Stack>
+      </Modal>
+
+      {/* Add from template modal */}
+      <Modal
+        opened={templateModalOpened}
+        onClose={() => setTemplateModalOpened(false)}
+        title="Add Meal from Template"
+        size="md"
+      >
+        <Stack gap="md">
+          {templates.length === 0 ? (
+            <Text c="dimmed" ta="center">
+              No meal templates found. Create templates in the Meal Templates page.
+            </Text>
+          ) : (
+            templates.map((template) => (
+              <Card
+                key={template.id}
+                padding="sm"
+                withBorder
+                style={{ cursor: 'pointer' }}
+                onClick={() => handleAddFromTemplate(template.id)}
+              >
+                <Group justify="space-between">
+                  <div>
+                    <Text fw={500}>{template.name}</Text>
+                    <Text size="xs" c="dimmed">
+                      {template.items.length} item{template.items.length !== 1 ? 's' : ''}
+                    </Text>
+                  </div>
+                  <Text size="sm" c="blue" fw={500}>
+                    {Math.round(calculateTemplateCalories(template))} cal
+                  </Text>
+                </Group>
+              </Card>
+            ))
+          )}
+          <Group justify="flex-end">
+            <Button variant="subtle" onClick={() => setTemplateModalOpened(false)}>
+              Cancel
+            </Button>
+          </Group>
         </Stack>
       </Modal>
     </Stack>
