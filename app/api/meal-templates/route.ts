@@ -18,7 +18,6 @@ export async function GET() {
         mt.user_id,
         mt.name,
         mt.created_at,
-        mt.updated_at,
         COALESCE(
           json_agg(
             json_build_object(
@@ -44,7 +43,7 @@ export async function GET() {
       LEFT JOIN food_items fi ON mti.food_item_id = fi.id
       LEFT JOIN food_item_portions fip ON fi.id = fip.food_item_id AND mti.portion_type = fip.portion_type
       WHERE mt.user_id = $1
-      GROUP BY mt.id, mt.user_id, mt.name, mt.created_at, mt.updated_at
+      GROUP BY mt.id, mt.user_id, mt.name, mt.created_at
       ORDER BY mt.name`,
       [session.user.id]
     );
@@ -82,7 +81,7 @@ export async function POST(request: NextRequest) {
     const result = await pool.query(
       `INSERT INTO meal_templates (user_id, name)
        VALUES ($1, $2)
-       RETURNING id, user_id, name, created_at, updated_at`,
+       RETURNING id, user_id, name, created_at`,
       [session.user.id, name]
     );
 
