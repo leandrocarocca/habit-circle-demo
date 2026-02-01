@@ -132,6 +132,14 @@ export default function CalorieTrackingPage() {
   const [addTemplateToMealModalOpened, setAddTemplateToMealModalOpened] = useState(false);
   const [selectedMealForTemplate, setSelectedMealForTemplate] = useState<number | null>(null);
 
+  // Edit food item state
+  const [editFoodModalOpened, setEditFoodModalOpened] = useState(false);
+  const [editingFoodItem, setEditingFoodItem] = useState<MealFoodItem | null>(null);
+  const [editingMealId, setEditingMealId] = useState<number | null>(null);
+  const [editPortionType, setEditPortionType] = useState<string>('');
+  const [editPortionCount, setEditPortionCount] = useState<number>(1);
+  const [editFoodPortions, setEditFoodPortions] = useState<Portion[]>([]);
+
   // Food item selection state
   const [foodItems, setFoodItems] = useState<FoodItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -416,6 +424,81 @@ export default function CalorieTrackingPage() {
       notifications.show({
         title: 'Error',
         message: 'Failed to remove food item',
+        color: 'red',
+      });
+    }
+  };
+
+  const openEditFoodModal = async (mealId: number, foodItem: MealFoodItem) => {
+    setEditingMealId(mealId);
+    setEditingFoodItem(foodItem);
+    setEditPortionType(foodItem.portion_type);
+    setEditPortionCount(foodItem.portion_count);
+
+    // Load portions for this food item
+    try {
+      const response = await fetch(`/api/food-items/${foodItem.food_item_id}`);
+      if (!response.ok) {
+        throw new Error('Failed to load food item');
+      }
+      const data = await response.json();
+      setEditFoodPortions(data.portions || []);
+      setEditFoodModalOpened(true);
+    } catch (error) {
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to load food item details',
+        color: 'red',
+      });
+    }
+  };
+
+  const handleUpdateFoodItem = async () => {
+    if (!editingMealId || !editingFoodItem || !editPortionType) {
+      notifications.show({
+        title: 'Error',
+        message: 'Please select a portion size',
+        color: 'red',
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `/api/meals/${editingMealId}/food-items/${editingFoodItem.id}`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            portion_type: editPortionType,
+            portion_count: editPortionCount,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to update food item');
+      }
+
+      // Reload meals to get updated data
+      await loadMeals();
+
+      setEditFoodModalOpened(false);
+      setEditingFoodItem(null);
+      setEditingMealId(null);
+      setEditPortionType('');
+      setEditPortionCount(1);
+      setEditFoodPortions([]);
+
+      notifications.show({
+        title: 'Success',
+        message: 'Food item updated',
+        color: 'green',
+      });
+    } catch (error) {
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to update food item',
         color: 'red',
       });
     }
@@ -828,14 +911,24 @@ export default function CalorieTrackingPage() {
                             </Text>
                           )}
                         </div>
-                        <ActionIcon
-                          onClick={() => handleRemoveFoodFromMeal(meal.id, foodItem.id)}
-                          variant="subtle"
-                          color="red"
-                          size="sm"
-                        >
-                          <IconTrash size={14} />
-                        </ActionIcon>
+                        <Group gap={4}>
+                          <ActionIcon
+                            onClick={() => openEditFoodModal(meal.id, foodItem)}
+                            variant="subtle"
+                            color="blue"
+                            size="sm"
+                          >
+                            <IconEdit size={14} />
+                          </ActionIcon>
+                          <ActionIcon
+                            onClick={() => handleRemoveFoodFromMeal(meal.id, foodItem.id)}
+                            variant="subtle"
+                            color="red"
+                            size="sm"
+                          >
+                            <IconTrash size={14} />
+                          </ActionIcon>
+                        </Group>
                       </Group>
                     );
                   })}
@@ -1102,6 +1195,70 @@ export default function CalorieTrackingPage() {
               Cancel
             </Button>
           </Group>
+        </Stack>
+      </Modal>
+
+      {/* Edit food item modal */}
+      <Modal
+        opened={editFoodModalOpened}
+        onClose={() => {
+          setEditFoodModalOpened(false);
+          setEditingFoodItem(null);
+          setEditingMealId(null);
+          setEditPortionType('');
+          setEditPortionCount(1);
+          setEditFoodPortions([]);
+        }}
+        title="Edit Food Item"
+      >
+        <Stack gap="md">
+          {editingFoodItem && (
+            <>
+              <div>
+                <Text fw={500}>{editingFoodItem.food_item_name}</Text>
+                {editingFoodItem.food_item_brand && (
+                  <Text size="sm" c="dimmed">
+                    {editingFoodItem.food_item_brand}
+                  </Text>
+                )}
+              </div>
+              <Divider />
+              <Select
+                label="Portion Size"
+                placeholder="Select portion size"
+                data={editFoodPortions.map((p) => ({
+                  value: p.portion_type,
+                  label: `${getPortionTypeLabel(p.portion_type)} (${p.grams}g)`,
+                }))}
+                value={editPortionType}
+                onChange={(value) => setEditPortionType(value || '')}
+              />
+              <NumberInput
+                label="Number of Portions"
+                value={editPortionCount}
+                onChange={(value) => setEditPortionCount(Number(value) || 1)}
+                min={0.1}
+                step={0.5}
+                decimalScale={1}
+              />
+              <Group justify="flex-end">
+                <Button
+                  variant="subtle"
+                  onClick={() => {
+                    setEditFoodModalOpened(false);
+                    setEditingFoodItem(null);
+                    setEditingMealId(null);
+                    setEditPortionType('');
+                    setEditPortionCount(1);
+                    setEditFoodPortions([]);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button onClick={handleUpdateFoodItem}>Save Changes</Button>
+              </Group>
+            </>
+          )}
         </Stack>
       </Modal>
     </Stack>
