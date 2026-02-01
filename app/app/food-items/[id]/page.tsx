@@ -14,8 +14,11 @@ import {
   ActionIcon,
   Loader,
   Divider,
+  Image,
+  FileButton,
+  Box,
 } from '@mantine/core';
-import { IconTrash, IconPlus, IconArrowLeft } from '@tabler/icons-react';
+import { IconTrash, IconPlus, IconArrowLeft, IconPhoto, IconX } from '@tabler/icons-react';
 import { useRouter, useParams } from 'next/navigation';
 import { notifications } from '@mantine/notifications';
 
@@ -30,6 +33,7 @@ interface FoodItem {
   name: string;
   brand?: string;
   category: string;
+  image_url?: string;
   protein_per_100g: number;
   fat_per_100g: number;
   carbs_per_100g: number;
@@ -75,6 +79,7 @@ export default function FoodItemDetailPage() {
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   const [formData, setFormData] = useState<FoodItem>({
     name: '',
@@ -192,6 +197,58 @@ export default function FoodItemDetailPage() {
     }
   };
 
+  const handleImageUpload = async (file: File | null) => {
+    if (!file) return;
+
+    try {
+      setUploading(true);
+      const uploadData = new FormData();
+      uploadData.append('file', file);
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: uploadData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to upload image');
+      }
+
+      const { url } = await response.json();
+      setFormData((prev) => ({ ...prev, image_url: url }));
+
+      notifications.show({
+        title: 'Success',
+        message: 'Image uploaded',
+        color: 'green',
+      });
+    } catch (error: any) {
+      notifications.show({
+        title: 'Error',
+        message: error.message || 'Failed to upload image',
+        color: 'red',
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRemoveImage = async () => {
+    if (formData.image_url) {
+      try {
+        await fetch('/api/upload', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: formData.image_url }),
+        });
+      } catch (error) {
+        console.error('Failed to delete image from storage:', error);
+      }
+    }
+    setFormData({ ...formData, image_url: undefined });
+  };
+
   const addPortion = () => {
     setFormData({
       ...formData,
@@ -274,6 +331,54 @@ export default function FoodItemDetailPage() {
             data={CATEGORIES}
             required
           />
+
+          <Box>
+            <Text size="sm" fw={500} mb="xs">
+              Photo
+            </Text>
+            {formData.image_url ? (
+              <Box pos="relative" style={{ width: 'fit-content' }}>
+                <Image
+                  src={formData.image_url}
+                  alt="Food item"
+                  w={200}
+                  h={200}
+                  fit="cover"
+                  radius="md"
+                />
+                <ActionIcon
+                  color="red"
+                  variant="filled"
+                  size="sm"
+                  pos="absolute"
+                  top={5}
+                  right={5}
+                  onClick={handleRemoveImage}
+                >
+                  <IconX size={14} />
+                </ActionIcon>
+              </Box>
+            ) : (
+              <FileButton
+                onChange={handleImageUpload}
+                accept="image/png,image/jpeg,image/webp,image/gif"
+              >
+                {(props) => (
+                  <Button
+                    {...props}
+                    variant="light"
+                    leftSection={<IconPhoto size={16} />}
+                    loading={uploading}
+                  >
+                    Upload Photo
+                  </Button>
+                )}
+              </FileButton>
+            )}
+            <Text size="xs" c="dimmed" mt="xs">
+              Max 4MB. JPEG, PNG, WebP, or GIF.
+            </Text>
+          </Box>
 
           <Divider label="Nutrition per 100g" labelPosition="center" />
 

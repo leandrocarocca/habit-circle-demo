@@ -14,6 +14,8 @@ import {
   Card,
   Badge,
   Loader,
+  Image,
+  Box,
 } from '@mantine/core';
 import { IconPlus, IconSearch } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
@@ -30,6 +32,7 @@ interface FoodItem {
   name: string;
   brand?: string;
   category: string;
+  image_url?: string;
   protein_per_100g: number;
   fat_per_100g: number;
   carbs_per_100g: number;
@@ -180,19 +183,31 @@ export default function FoodItemsPage() {
                         style={{ cursor: 'pointer' }}
                         onClick={() => router.push(`/app/food-items/${item.id}`)}
                       >
-                        <Group justify="space-between">
-                          <div>
-                            <Text fw={500}>{item.name}</Text>
-                            {item.brand && (
-                              <Text size="xs" c="dimmed">
-                                {item.brand}
-                              </Text>
+                        <Group justify="space-between" wrap="nowrap">
+                          <Group wrap="nowrap">
+                            {item.image_url && (
+                              <Image
+                                src={item.image_url}
+                                alt={item.name}
+                                w={50}
+                                h={50}
+                                fit="cover"
+                                radius="sm"
+                              />
                             )}
-                            <Text size="sm" c="dimmed">
-                              {item.calories_per_100g} cal per 100g
-                            </Text>
-                          </div>
-                          <Text size="sm" c="dimmed">
+                            <Box>
+                              <Text fw={500}>{item.name}</Text>
+                              {item.brand && (
+                                <Text size="xs" c="dimmed">
+                                  {item.brand}
+                                </Text>
+                              )}
+                              <Text size="sm" c="dimmed">
+                                {item.calories_per_100g} cal per 100g
+                              </Text>
+                            </Box>
+                          </Group>
+                          <Text size="sm" c="dimmed" visibleFrom="sm">
                             P: {item.protein_per_100g}g | F: {item.fat_per_100g}g | C:{' '}
                             {item.carbs_per_100g}g | S: {item.sugar_per_100g}g
                           </Text>
