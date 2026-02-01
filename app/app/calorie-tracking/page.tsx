@@ -170,6 +170,7 @@ export default function CalorieTrackingPage() {
 
   // Food item selection state
   const [foodItems, setFoodItems] = useState<FoodItem[]>([]);
+  const [recentFoodItems, setRecentFoodItems] = useState<FoodItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [selectedFoodItem, setSelectedFoodItem] = useState<FoodItem | null>(null);
@@ -365,14 +366,25 @@ export default function CalorieTrackingPage() {
     setPortionCount(1);
     setFoodViewMode('recent');
 
-    // Load food items
+    // Load food items and recent food items in parallel
     try {
-      const response = await fetch('/api/food-items');
-      if (!response.ok) {
+      const [foodItemsResponse, recentResponse] = await Promise.all([
+        fetch('/api/food-items'),
+        fetch('/api/food-items/recent'),
+      ]);
+
+      if (!foodItemsResponse.ok) {
         throw new Error('Failed to load food items');
       }
-      const data = await response.json();
-      setFoodItems(data);
+
+      const foodItemsData = await foodItemsResponse.json();
+      setFoodItems(foodItemsData);
+
+      if (recentResponse.ok) {
+        const recentData = await recentResponse.json();
+        setRecentFoodItems(recentData);
+      }
+
       setAddFoodModalOpened(true);
     } catch (error) {
       notifications.show({
@@ -1181,19 +1193,13 @@ export default function CalorieTrackingPage() {
                   {foodViewMode === 'recent' ? (
                     <ScrollArea h={350}>
                       <Stack gap="xs">
-                        {foodItems.length === 0 ? (
+                        {recentFoodItems.length === 0 ? (
                           <Text c="dimmed" ta="center" py="md">
-                            No food items yet. Create some in the Food Items page.
+                            No recently used food items. Add some food to your meals to see them here.
                           </Text>
                         ) : (
-                          // Show most recent items first
-                          [...foodItems]
-                            .sort((a, b) => {
-                              if (!a.created_at || !b.created_at) return 0;
-                              return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-                            })
-                            .slice(0, 20)
-                            .map((item) => (
+                          // Show user's recently used food items
+                          recentFoodItems.map((item) => (
                             <Card
                               key={item.id}
                               padding="sm"
