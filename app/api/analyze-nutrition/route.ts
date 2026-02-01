@@ -18,8 +18,17 @@ export async function POST(request: Request) {
       );
     }
 
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      console.error('ANTHROPIC_API_KEY environment variable is not set');
+      return NextResponse.json(
+        { error: 'AI service not configured' },
+        { status: 500 }
+      );
+    }
+
     const client = new Anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY,
+      apiKey,
     });
 
     const imageContent: Anthropic.ImageBlockParam = image_base64

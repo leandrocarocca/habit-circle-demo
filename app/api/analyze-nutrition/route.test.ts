@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { POST } from './route';
 
 vi.mock('@/auth', () => ({
@@ -31,6 +31,9 @@ vi.mock('@anthropic-ai/sdk', () => ({
 }));
 
 describe('POST /api/analyze-nutrition', () => {
+  beforeEach(() => {
+    process.env.ANTHROPIC_API_KEY = 'test-api-key';
+  });
   it('returns 401 if user is not authenticated', async () => {
     const { auth } = await import('@/auth');
     vi.mocked(auth).mockResolvedValueOnce(null);
