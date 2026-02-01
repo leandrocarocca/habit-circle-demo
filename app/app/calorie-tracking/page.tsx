@@ -135,7 +135,7 @@ export default function CalorieTrackingPage() {
   // Edit food item state
   const [editFoodModalOpened, setEditFoodModalOpened] = useState(false);
   const [editingFoodItem, setEditingFoodItem] = useState<MealFoodItem | null>(null);
-  const [editingMealId, setEditingMealId] = useState<number | null>(null);
+  const [editFoodMealId, setEditFoodMealId] = useState<number | null>(null);
   const [editPortionType, setEditPortionType] = useState<string>('');
   const [editPortionCount, setEditPortionCount] = useState<number>(1);
   const [editFoodPortions, setEditFoodPortions] = useState<Portion[]>([]);
@@ -430,7 +430,7 @@ export default function CalorieTrackingPage() {
   };
 
   const openEditFoodModal = async (mealId: number, foodItem: MealFoodItem) => {
-    setEditingMealId(mealId);
+    setEditFoodMealId(mealId);
     setEditingFoodItem(foodItem);
     setEditPortionType(foodItem.portion_type);
     setEditPortionCount(foodItem.portion_count);
@@ -454,7 +454,7 @@ export default function CalorieTrackingPage() {
   };
 
   const handleUpdateFoodItem = async () => {
-    if (!editingMealId || !editingFoodItem || !editPortionType) {
+    if (!editFoodMealId || !editingFoodItem || !editPortionType) {
       notifications.show({
         title: 'Error',
         message: 'Please select a portion size',
@@ -465,7 +465,7 @@ export default function CalorieTrackingPage() {
 
     try {
       const response = await fetch(
-        `/api/meals/${editingMealId}/food-items/${editingFoodItem.id}`,
+        `/api/meals/${editFoodMealId}/food-items/${editingFoodItem.id}`,
         {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -485,7 +485,7 @@ export default function CalorieTrackingPage() {
 
       setEditFoodModalOpened(false);
       setEditingFoodItem(null);
-      setEditingMealId(null);
+      setEditFoodMealId(null);
       setEditPortionType('');
       setEditPortionCount(1);
       setEditFoodPortions([]);
@@ -1204,7 +1204,7 @@ export default function CalorieTrackingPage() {
         onClose={() => {
           setEditFoodModalOpened(false);
           setEditingFoodItem(null);
-          setEditingMealId(null);
+          setEditFoodMealId(null);
           setEditPortionType('');
           setEditPortionCount(1);
           setEditFoodPortions([]);
@@ -1247,7 +1247,7 @@ export default function CalorieTrackingPage() {
                   onClick={() => {
                     setEditFoodModalOpened(false);
                     setEditingFoodItem(null);
-                    setEditingMealId(null);
+                    setEditFoodMealId(null);
                     setEditPortionType('');
                     setEditPortionCount(1);
                     setEditFoodPortions([]);
