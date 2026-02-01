@@ -21,6 +21,7 @@ export async function GET(
         r.id,
         r.user_id,
         r.name,
+        r.instructions,
         r.portions_yield,
         r.created_at,
         COALESCE(
@@ -48,7 +49,7 @@ export async function GET(
       LEFT JOIN food_items fi ON ri.food_item_id = fi.id
       LEFT JOIN food_item_portions fip ON fi.id = fip.food_item_id AND ri.portion_type::portion_type = fip.portion_type
       WHERE r.id = $1 AND r.user_id = $2
-      GROUP BY r.id, r.user_id, r.name, r.portions_yield, r.created_at`,
+      GROUP BY r.id, r.user_id, r.name, r.instructions, r.portions_yield, r.created_at`,
       [id, session.user.id]
     );
 
@@ -82,7 +83,7 @@ export async function PUT(
 
     const { id } = await params;
     const body = await request.json();
-    const { name, portions_yield } = body;
+    const { name, portions_yield, instructions } = body;
 
     if (!name) {
       return NextResponse.json(
@@ -102,10 +103,10 @@ export async function PUT(
 
     const result = await pool.query(
       `UPDATE recipes
-       SET name = $1, portions_yield = $2
-       WHERE id = $3 AND user_id = $4
-       RETURNING id, user_id, name, portions_yield, created_at`,
-      [name, portions_yield, id, session.user.id]
+       SET name = $1, instructions = $2, portions_yield = $3
+       WHERE id = $4 AND user_id = $5
+       RETURNING id, user_id, name, instructions, portions_yield, created_at`,
+      [name, instructions || null, portions_yield, id, session.user.id]
     );
 
     if (result.rows.length === 0) {

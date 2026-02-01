@@ -11,12 +11,14 @@ import {
   ActionIcon,
   Modal,
   TextInput,
+  Textarea,
   NumberInput,
   Card,
   Accordion,
   Select,
   Divider,
   Badge,
+  Spoiler,
 } from '@mantine/core';
 import {
   IconPlus,
@@ -64,6 +66,7 @@ interface Recipe {
   id: number;
   user_id: string;
   name: string;
+  instructions?: string;
   portions_yield: number;
   created_at: string;
   ingredients: RecipeIngredient[];
@@ -104,6 +107,7 @@ export default function RecipesPage() {
   const [editRecipeModalOpened, setEditRecipeModalOpened] = useState(false);
   const [addIngredientModalOpened, setAddIngredientModalOpened] = useState(false);
   const [recipeName, setRecipeName] = useState('');
+  const [recipeInstructions, setRecipeInstructions] = useState('');
   const [portionsYield, setPortionsYield] = useState<number>(4);
   const [editingRecipeId, setEditingRecipeId] = useState<number | null>(null);
   const [selectedRecipeForIngredient, setSelectedRecipeForIngredient] = useState<number | null>(null);
@@ -163,7 +167,7 @@ export default function RecipesPage() {
       const response = await fetch('/api/recipes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: recipeName, portions_yield: portionsYield }),
+        body: JSON.stringify({ name: recipeName, instructions: recipeInstructions, portions_yield: portionsYield }),
       });
 
       if (!response.ok) {
@@ -174,6 +178,7 @@ export default function RecipesPage() {
       setRecipes([...recipes, newRecipe]);
       setAddRecipeModalOpened(false);
       setRecipeName('');
+      setRecipeInstructions('');
       setPortionsYield(4);
 
       notifications.show({
@@ -193,6 +198,7 @@ export default function RecipesPage() {
   const openEditRecipeModal = (recipe: Recipe) => {
     setEditingRecipeId(recipe.id);
     setRecipeName(recipe.name);
+    setRecipeInstructions(recipe.instructions || '');
     setPortionsYield(recipe.portions_yield);
     setEditRecipeModalOpened(true);
   };
@@ -213,7 +219,7 @@ export default function RecipesPage() {
       const response = await fetch(`/api/recipes/${editingRecipeId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: recipeName, portions_yield: portionsYield }),
+        body: JSON.stringify({ name: recipeName, instructions: recipeInstructions, portions_yield: portionsYield }),
       });
 
       if (!response.ok) {
@@ -224,12 +230,13 @@ export default function RecipesPage() {
       setRecipes(
         recipes.map((r) =>
           r.id === editingRecipeId
-            ? { ...r, name: updatedRecipe.name, portions_yield: updatedRecipe.portions_yield }
+            ? { ...r, name: updatedRecipe.name, instructions: updatedRecipe.instructions, portions_yield: updatedRecipe.portions_yield }
             : r
         )
       );
       setEditRecipeModalOpened(false);
       setRecipeName('');
+      setRecipeInstructions('');
       setPortionsYield(4);
       setEditingRecipeId(null);
 
@@ -543,6 +550,15 @@ export default function RecipesPage() {
                   </Stack>
                 )}
 
+                {/* Instructions */}
+                {recipe.instructions && (
+                  <Spoiler maxHeight={60} showLabel="Show instructions" hideLabel="Hide instructions" mb="sm">
+                    <Text size="sm" style={{ whiteSpace: 'pre-wrap' }}>
+                      {recipe.instructions}
+                    </Text>
+                  </Spoiler>
+                )}
+
                 <Divider mb="sm" />
 
                 {/* Ingredients in recipe */}
@@ -634,6 +650,15 @@ export default function RecipesPage() {
             min={1}
             max={100}
           />
+          <Textarea
+            label="Instructions"
+            description="Step-by-step cooking instructions (optional)"
+            value={recipeInstructions}
+            onChange={(e) => setRecipeInstructions(e.target.value)}
+            placeholder="1. Preheat oven to 180°C&#10;2. Mix ingredients...&#10;3. Bake for 30 minutes..."
+            minRows={4}
+            autosize
+          />
           <Group justify="flex-end">
             <Button variant="subtle" onClick={() => setAddRecipeModalOpened(false)}>
               Cancel
@@ -663,6 +688,15 @@ export default function RecipesPage() {
             onChange={(value) => setPortionsYield(Number(value) || 1)}
             min={1}
             max={100}
+          />
+          <Textarea
+            label="Instructions"
+            description="Step-by-step cooking instructions (optional)"
+            value={recipeInstructions}
+            onChange={(e) => setRecipeInstructions(e.target.value)}
+            placeholder="1. Preheat oven to 180°C&#10;2. Mix ingredients...&#10;3. Bake for 30 minutes..."
+            minRows={4}
+            autosize
           />
           <Group justify="flex-end">
             <Button variant="subtle" onClick={() => setEditRecipeModalOpened(false)}>

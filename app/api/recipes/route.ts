@@ -17,6 +17,7 @@ export async function GET() {
         r.id,
         r.user_id,
         r.name,
+        r.instructions,
         r.portions_yield,
         r.created_at,
         COALESCE(
@@ -44,7 +45,7 @@ export async function GET() {
       LEFT JOIN food_items fi ON ri.food_item_id = fi.id
       LEFT JOIN food_item_portions fip ON fi.id = fip.food_item_id AND ri.portion_type::portion_type = fip.portion_type
       WHERE r.user_id = $1
-      GROUP BY r.id, r.user_id, r.name, r.portions_yield, r.created_at
+      GROUP BY r.id, r.user_id, r.name, r.instructions, r.portions_yield, r.created_at
       ORDER BY r.name`,
       [session.user.id]
     );
@@ -68,7 +69,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, portions_yield } = body;
+    const { name, portions_yield, instructions } = body;
 
     if (!name) {
       return NextResponse.json(
@@ -87,10 +88,10 @@ export async function POST(request: NextRequest) {
     const pool = new Pool({ connectionString: process.env.POSTGRES_URL });
 
     const result = await pool.query(
-      `INSERT INTO recipes (user_id, name, portions_yield)
-       VALUES ($1, $2, $3)
-       RETURNING id, user_id, name, portions_yield, created_at`,
-      [session.user.id, name, portions_yield]
+      `INSERT INTO recipes (user_id, name, instructions, portions_yield)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id, user_id, name, instructions, portions_yield, created_at`,
+      [session.user.id, name, instructions || null, portions_yield]
     );
 
     const recipe = result.rows[0];
