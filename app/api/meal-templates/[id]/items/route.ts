@@ -99,7 +99,7 @@ export async function POST(
         fi.calories_per_100g
       FROM meal_template_items mti
       JOIN food_items fi ON mti.food_item_id = fi.id
-      JOIN food_item_portions fip ON fi.id = fip.food_item_id AND mti.portion_type = fip.portion_type
+      JOIN food_item_portions fip ON fi.id = fip.food_item_id AND mti.portion_type::portion_type = fip.portion_type
       WHERE mti.id = $1`,
       [templateItem.id]
     );

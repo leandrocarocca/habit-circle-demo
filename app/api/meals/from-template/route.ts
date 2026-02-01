@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
     for (const item of items) {
       await pool.query(
         `INSERT INTO meal_food_items (meal_id, food_item_id, portion_type, portion_count)
-         VALUES ($1, $2, $3, $4)`,
+         VALUES ($1, $2, $3::portion_type, $4)`,
         [meal.id, item.food_item_id, item.portion_type, item.portion_count]
       );
     }

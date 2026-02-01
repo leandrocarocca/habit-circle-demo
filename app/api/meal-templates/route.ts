@@ -41,7 +41,7 @@ export async function GET() {
       FROM meal_templates mt
       LEFT JOIN meal_template_items mti ON mt.id = mti.template_id
       LEFT JOIN food_items fi ON mti.food_item_id = fi.id
-      LEFT JOIN food_item_portions fip ON fi.id = fip.food_item_id AND mti.portion_type = fip.portion_type
+      LEFT JOIN food_item_portions fip ON fi.id = fip.food_item_id AND mti.portion_type::portion_type = fip.portion_type
       WHERE mt.user_id = $1
       GROUP BY mt.id, mt.user_id, mt.name, mt.created_at
       ORDER BY mt.name`,
