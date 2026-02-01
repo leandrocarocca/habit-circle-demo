@@ -29,9 +29,9 @@ export async function GET(
       );
     }
 
-    // Get all members of the group
+    // Get all members of the group with their goals
     const result = await pool.query(
-      `SELECT u.id, u.name, u.email, gm.joined_at
+      `SELECT u.id, u.name, u.email, u.calorie_goal, u.protein_goal, gm.joined_at
        FROM users u
        INNER JOIN group_memberships gm ON gm.user_id = u.id
        WHERE gm.group_id = $1

@@ -119,6 +119,8 @@ interface GroupMember {
   id: string;
   name: string;
   email: string;
+  calorie_goal: number | null;
+  protein_goal: number | null;
 }
 
 const CATEGORIES = [
@@ -161,6 +163,10 @@ export default function CalorieTrackingPage() {
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [members, setMembers] = useState<GroupMember[]>([]);
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
+
+  // Goals state (for current user)
+  const [myCalorieGoal, setMyCalorieGoal] = useState<number | null>(null);
+  const [myProteinGoal, setMyProteinGoal] = useState<number | null>(null);
   const [editMealModalOpened, setEditMealModalOpened] = useState(false);
   const [addFoodModalOpened, setAddFoodModalOpened] = useState(false);
   const [mealName, setMealName] = useState('');
@@ -241,10 +247,22 @@ export default function CalorieTrackingPage() {
     setCurrentDate(new Date());
   };
 
-  // Load groups on mount
+  // Load groups and goals on mount
   useEffect(() => {
     loadGroups();
+    loadMyGoals();
   }, []);
+
+  const loadMyGoals = async () => {
+    try {
+      const response = await fetch('/api/settings');
+      const data = await response.json();
+      setMyCalorieGoal(data.calorie_goal || null);
+      setMyProteinGoal(data.protein_goal || null);
+    } catch (error) {
+      console.error('Error loading goals:', error);
+    }
+  };
 
   // Load members when group is selected
   useEffect(() => {
@@ -963,54 +981,110 @@ export default function CalorieTrackingPage() {
       </Paper>
 
       {/* Daily summary */}
-      {meals.length > 0 && (
-        <Paper p="md" withBorder style={{ backgroundColor: '#f8f9fa' }}>
-          <Stack gap="md">
-            <div>
-              <Text size="xl" fw={700} ta="center" c="blue">
-                {Math.round(dayTotals.calories)} calories
-              </Text>
-              <Text size="xs" c="dimmed" ta="center">
-                Total for the day
-              </Text>
-            </div>
-            <Group justify="space-around">
-              <div style={{ textAlign: 'center' }}>
-                <Text size="lg" fw={600} c="blue">
-                  {Math.round(dayTotals.protein)}g
+      {(() => {
+        // Get goals for the selected user (either own goals or selected member's goals)
+        const currentCalorieGoal = isViewingOtherUser
+          ? selectedMember?.calorie_goal
+          : myCalorieGoal;
+        const currentProteinGoal = isViewingOtherUser
+          ? selectedMember?.protein_goal
+          : myProteinGoal;
+
+        const remainingCalories = currentCalorieGoal
+          ? currentCalorieGoal - dayTotals.calories
+          : null;
+        const remainingProtein = currentProteinGoal
+          ? currentProteinGoal - dayTotals.protein
+          : null;
+
+        return (
+          <Paper p="md" withBorder style={{ backgroundColor: '#f8f9fa' }}>
+            <Stack gap="md">
+              <div>
+                <Text size="xl" fw={700} ta="center" c="blue">
+                  {Math.round(dayTotals.calories)} calories
                 </Text>
-                <Text size="xs" c="dimmed">
-                  Protein
-                </Text>
-              </div>
-              <div style={{ textAlign: 'center' }}>
-                <Text size="lg" fw={600} c="orange">
-                  {Math.round(dayTotals.carbs)}g
-                </Text>
-                <Text size="xs" c="dimmed">
-                  Carbs
-                </Text>
-              </div>
-              <div style={{ textAlign: 'center' }}>
-                <Text size="lg" fw={600} c="yellow">
-                  {Math.round(dayTotals.fat)}g
-                </Text>
-                <Text size="xs" c="dimmed">
-                  Fat
+                <Text size="xs" c="dimmed" ta="center">
+                  {currentCalorieGoal ? `of ${currentCalorieGoal} goal` : 'Total for the day'}
                 </Text>
               </div>
-              <div style={{ textAlign: 'center' }}>
-                <Text size="lg" fw={600} c="pink">
-                  {Math.round(dayTotals.sugar)}g
-                </Text>
-                <Text size="xs" c="dimmed">
-                  Sugar
-                </Text>
-              </div>
-            </Group>
-          </Stack>
-        </Paper>
-      )}
+
+              {/* Remaining calories and protein */}
+              {(remainingCalories !== null || remainingProtein !== null) && (
+                <Group justify="center" gap="xl">
+                  {remainingCalories !== null && (
+                    <div style={{ textAlign: 'center' }}>
+                      <Text
+                        size="lg"
+                        fw={700}
+                        c={remainingCalories >= 0 ? 'green' : 'red'}
+                      >
+                        {remainingCalories >= 0
+                          ? `${Math.round(remainingCalories)} left`
+                          : `${Math.round(Math.abs(remainingCalories))} over`}
+                      </Text>
+                      <Text size="xs" c="dimmed">
+                        Remaining Calories
+                      </Text>
+                    </div>
+                  )}
+                  {remainingProtein !== null && (
+                    <div style={{ textAlign: 'center' }}>
+                      <Text
+                        size="lg"
+                        fw={700}
+                        c={remainingProtein <= 0 ? 'green' : 'orange'}
+                      >
+                        {remainingProtein <= 0
+                          ? `${Math.round(Math.abs(remainingProtein))}g over`
+                          : `${Math.round(remainingProtein)}g left`}
+                      </Text>
+                      <Text size="xs" c="dimmed">
+                        Remaining Protein
+                      </Text>
+                    </div>
+                  )}
+                </Group>
+              )}
+
+              <Group justify="space-around">
+                <div style={{ textAlign: 'center' }}>
+                  <Text size="lg" fw={600} c="blue">
+                    {Math.round(dayTotals.protein)}g
+                  </Text>
+                  <Text size="xs" c="dimmed">
+                    Protein{currentProteinGoal ? ` / ${currentProteinGoal}g` : ''}
+                  </Text>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <Text size="lg" fw={600} c="orange">
+                    {Math.round(dayTotals.carbs)}g
+                  </Text>
+                  <Text size="xs" c="dimmed">
+                    Carbs
+                  </Text>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <Text size="lg" fw={600} c="yellow">
+                    {Math.round(dayTotals.fat)}g
+                  </Text>
+                  <Text size="xs" c="dimmed">
+                    Fat
+                  </Text>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <Text size="lg" fw={600} c="pink">
+                    {Math.round(dayTotals.sugar)}g
+                  </Text>
+                  <Text size="xs" c="dimmed">
+                    Sugar
+                  </Text>
+                </div>
+              </Group>
+            </Stack>
+          </Paper>
+        );
+      })()}
 
       {/* Add meal buttons - only show when viewing own data */}
       {!isViewingOtherUser && (

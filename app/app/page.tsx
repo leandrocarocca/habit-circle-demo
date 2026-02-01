@@ -1,8 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Title, Paper, Text, Stack, Table, Select, Group, Box, Badge } from '@mantine/core';
+import { useSession } from 'next-auth/react';
+import { Title, Paper, Text, Stack, Table, Select, Group, Box, Badge, NumberInput, Button } from '@mantine/core';
 import { IconTrophy, IconMedal, IconAward } from '@tabler/icons-react';
+import { notifications } from '@mantine/notifications';
 
 interface Stats {
   total_points: number;
@@ -39,6 +41,8 @@ interface GroupMember {
   id: number;
   name: string;
   email: string;
+  calorie_goal: number | null;
+  protein_goal: number | null;
 }
 
 interface MemberStats {
@@ -110,6 +114,7 @@ const getRankBadge = (rank: number) => {
 };
 
 export default function AppPage() {
+  const { data: session } = useSession();
   const [groups, setGroups] = useState<ChallengeGroup[]>([]);
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [members, setMembers] = useState<GroupMember[]>([]);
@@ -117,9 +122,63 @@ export default function AppPage() {
   const [memberWeekStats, setMemberWeekStats] = useState<MemberWeekStats[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Goals state
+  const [calorieGoal, setCalorieGoal] = useState<number | ''>('');
+  const [proteinGoal, setProteinGoal] = useState<number | ''>('');
+  const [savingGoals, setSavingGoals] = useState(false);
+
   useEffect(() => {
     loadGroups();
+    loadGoals();
   }, []);
+
+  const loadGoals = async () => {
+    try {
+      const response = await fetch('/api/settings');
+      const data = await response.json();
+      if (data.calorie_goal) setCalorieGoal(data.calorie_goal);
+      if (data.protein_goal) setProteinGoal(data.protein_goal);
+    } catch (error) {
+      console.error('Error loading goals:', error);
+    }
+  };
+
+  const saveGoals = async () => {
+    setSavingGoals(true);
+    try {
+      const response = await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          calorie_goal: calorieGoal || null,
+          protein_goal: proteinGoal || null,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save goals');
+      }
+
+      // Reload members to get updated goals
+      if (selectedGroup) {
+        loadGroupMembers(parseInt(selectedGroup));
+      }
+
+      notifications.show({
+        title: 'Success',
+        message: 'Goals saved successfully',
+        color: 'green',
+      });
+    } catch (error) {
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to save goals',
+        color: 'red',
+      });
+    } finally {
+      setSavingGoals(false);
+    }
+  };
 
   useEffect(() => {
     if (selectedGroup) {
@@ -257,6 +316,67 @@ export default function AppPage() {
             <Text c="dimmed">
               Members: {selectedGroupData.member_count}
             </Text>
+          </Stack>
+        </Paper>
+      )}
+
+      {/* My Goals Section */}
+      <Paper p="lg" withBorder>
+        <Title order={3} mb="md">My Daily Goals</Title>
+        <Group align="flex-end" gap="md">
+          <NumberInput
+            label="Calorie Goal"
+            placeholder="e.g., 2000"
+            value={calorieGoal}
+            onChange={(value) => setCalorieGoal(value === '' ? '' : Number(value))}
+            min={0}
+            max={10000}
+            suffix=" cal"
+            style={{ flex: 1, maxWidth: 180 }}
+          />
+          <NumberInput
+            label="Protein Goal"
+            placeholder="e.g., 150"
+            value={proteinGoal}
+            onChange={(value) => setProteinGoal(value === '' ? '' : Number(value))}
+            min={0}
+            max={500}
+            suffix=" g"
+            style={{ flex: 1, maxWidth: 180 }}
+          />
+          <Button onClick={saveGoals} loading={savingGoals}>
+            Save Goals
+          </Button>
+        </Group>
+      </Paper>
+
+      {/* Group Members Goals */}
+      {members.length > 0 && (
+        <Paper p="lg" withBorder>
+          <Title order={3} mb="md">Group Goals</Title>
+          <Stack gap="sm">
+            {members.map((member) => (
+              <Group key={member.id} justify="space-between" p="sm" style={{ backgroundColor: member.id.toString() === session?.user?.id ? '#f0f7ff' : undefined, borderRadius: '8px' }}>
+                <Text fw={member.id.toString() === session?.user?.id ? 600 : 400}>
+                  {member.name || member.email}
+                  {member.id.toString() === session?.user?.id && ' (You)'}
+                </Text>
+                <Group gap="lg">
+                  <div style={{ textAlign: 'right' }}>
+                    <Text size="sm" c="dimmed">Calories</Text>
+                    <Text fw={500} c={member.calorie_goal ? 'blue' : 'dimmed'}>
+                      {member.calorie_goal ? `${member.calorie_goal} cal` : 'Not set'}
+                    </Text>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <Text size="sm" c="dimmed">Protein</Text>
+                    <Text fw={500} c={member.protein_goal ? 'blue' : 'dimmed'}>
+                      {member.protein_goal ? `${member.protein_goal}g` : 'Not set'}
+                    </Text>
+                  </div>
+                </Group>
+              </Group>
+            ))}
           </Stack>
         </Paper>
       )}
