@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { AppShell, Group, Button, NavLink, Stack, Text, UnstyledButton } from '@mantine/core';
+import { AppShell, Group, Button, NavLink, Stack, Text, UnstyledButton, Menu } from '@mantine/core';
 import { signOut } from 'next-auth/react';
 import { useRouter, usePathname } from 'next/navigation';
 import {
@@ -14,6 +14,7 @@ import {
   IconApple,
   IconChartBar,
   IconTemplate,
+  IconDotsVertical,
 } from '@tabler/icons-react';
 
 export function AppShellLayout({ children }: { children: React.ReactNode }) {
@@ -25,16 +26,23 @@ export function AppShellLayout({ children }: { children: React.ReactNode }) {
     router.push('/login');
   };
 
-  const navItems = [
+  // Main tabs shown in mobile bottom bar
+  const mainNavItems = [
     { href: '/app', label: 'Home', icon: IconHome },
     { href: '/app/logging', label: 'Log', icon: IconClipboardList },
+    { href: '/app/calorie-tracking', label: 'Calories', icon: IconChartBar },
+    { href: '/app/meal-templates', label: 'Templates', icon: IconTemplate },
+  ];
+
+  // Items shown in "More" menu on mobile
+  const moreNavItems = [
     { href: '/app/calendar', label: 'Calendar', icon: IconCalendar },
     { href: '/app/groups', label: 'Groups', icon: IconUsers },
-    { href: '/app/food-items', label: 'Food', icon: IconApple },
-    { href: '/app/meal-templates', label: 'Templates', icon: IconTemplate },
-    { href: '/app/calorie-tracking', label: 'Calories', icon: IconChartBar },
+    { href: '/app/food-items', label: 'Food Items', icon: IconApple },
     { href: '/app/settings', label: 'Settings', icon: IconSettings },
   ];
+
+  const isMoreActive = moreNavItems.some(item => pathname === item.href);
 
   return (
     <AppShell
@@ -120,7 +128,7 @@ export function AppShellLayout({ children }: { children: React.ReactNode }) {
           px="xs"
           style={{ width: '100%' }}
         >
-          {navItems.map((item) => {
+          {mainNavItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href;
             return (
@@ -144,6 +152,40 @@ export function AppShellLayout({ children }: { children: React.ReactNode }) {
               </UnstyledButton>
             );
           })}
+          <Menu position="top" withArrow>
+            <Menu.Target>
+              <UnstyledButton
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '4px 8px',
+                  flex: 1,
+                  color: isMoreActive ? 'var(--mantine-color-blue-6)' : 'var(--mantine-color-gray-6)',
+                }}
+              >
+                <IconDotsVertical size={20} stroke={isMoreActive ? 2.5 : 1.5} />
+                <Text size="10px" fw={isMoreActive ? 600 : 400} mt={2}>
+                  More
+                </Text>
+              </UnstyledButton>
+            </Menu.Target>
+            <Menu.Dropdown>
+              {moreNavItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Menu.Item
+                    key={item.href}
+                    leftSection={<Icon size={16} />}
+                    onClick={() => router.push(item.href)}
+                  >
+                    {item.label}
+                  </Menu.Item>
+                );
+              })}
+            </Menu.Dropdown>
+          </Menu>
         </Group>
       </AppShell.Footer>
 

@@ -6,7 +6,8 @@
       "Bash(npm test:*)",
       "Bash(git add:*)",
       "Bash(ls:*)",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(npm run test:*)"
     ],
     "deny": [],
     "ask": []
