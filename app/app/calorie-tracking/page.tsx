@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import {
   Title,
   Text,
@@ -109,6 +110,17 @@ interface Recipe {
   ingredients: RecipeIngredient[];
 }
 
+interface ChallengeGroup {
+  id: number;
+  name: string;
+}
+
+interface GroupMember {
+  id: string;
+  name: string;
+  email: string;
+}
+
 const CATEGORIES = [
   { value: 'meat', label: 'Meat' },
   { value: 'chicken', label: 'Chicken' },
@@ -138,10 +150,17 @@ const PORTION_TYPES = [
 ];
 
 export default function CalorieTrackingPage() {
+  const { data: session } = useSession();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [meals, setMeals] = useState<Meal[]>([]);
   const [loading, setLoading] = useState(false);
   const [addMealModalOpened, setAddMealModalOpened] = useState(false);
+
+  // Group sharing state
+  const [groups, setGroups] = useState<ChallengeGroup[]>([]);
+  const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
+  const [members, setMembers] = useState<GroupMember[]>([]);
+  const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [editMealModalOpened, setEditMealModalOpened] = useState(false);
   const [addFoodModalOpened, setAddFoodModalOpened] = useState(false);
   const [mealName, setMealName] = useState('');
@@ -222,15 +241,71 @@ export default function CalorieTrackingPage() {
     setCurrentDate(new Date());
   };
 
+  // Load groups on mount
   useEffect(() => {
-    loadMeals();
-  }, [currentDate]);
+    loadGroups();
+  }, []);
+
+  // Load members when group is selected
+  useEffect(() => {
+    if (selectedGroup) {
+      loadMembers(parseInt(selectedGroup));
+    }
+  }, [selectedGroup]);
+
+  // Set default selected user to current user
+  useEffect(() => {
+    if (session?.user?.id && !selectedUser) {
+      setSelectedUser(session.user.id);
+    }
+  }, [session, selectedUser]);
+
+  // Load meals when date, user, or group changes
+  useEffect(() => {
+    if (selectedUser) {
+      loadMeals();
+    }
+  }, [currentDate, selectedUser, selectedGroup]);
+
+  const loadGroups = async () => {
+    try {
+      const response = await fetch('/api/groups');
+      const data = await response.json();
+      setGroups(data);
+
+      if (data.length > 0) {
+        setSelectedGroup(data[0].id.toString());
+      }
+    } catch (error) {
+      console.error('Error loading groups:', error);
+    }
+  };
+
+  const loadMembers = async (groupId: number) => {
+    try {
+      const response = await fetch(`/api/groups/${groupId}/members`);
+      const data = await response.json();
+      setMembers(data);
+    } catch (error) {
+      console.error('Error loading members:', error);
+    }
+  };
 
   const loadMeals = async () => {
+    if (!selectedUser) return;
+
     try {
       setLoading(true);
       const dateStr = formatDate(currentDate);
-      const response = await fetch(`/api/meals?date=${dateStr}`);
+      const params = new URLSearchParams({ date: dateStr });
+
+      // If viewing another user's meals, add user_id and group_id
+      if (selectedUser !== session?.user?.id && selectedGroup) {
+        params.append('user_id', selectedUser);
+        params.append('group_id', selectedGroup);
+      }
+
+      const response = await fetch(`/api/meals?${params.toString()}`);
       if (!response.ok) {
         throw new Error('Failed to load meals');
       }
@@ -805,18 +880,60 @@ export default function CalorieTrackingPage() {
 
   const dayTotals = calculateDayTotals();
 
+  const isViewingOtherUser = selectedUser !== session?.user?.id;
+  const selectedMember = members.find((m) => m.id.toString() === selectedUser);
+
   return (
     <Stack gap="md">
-      <Group justify="space-between">
-        <Title order={2}>Calorie Tracking</Title>
-        <Button
-          variant="light"
-          size="xs"
-          onClick={() => setShowDetails(!showDetails)}
-        >
-          {showDetails ? 'Hide Details' : 'Show Details'}
-        </Button>
-      </Group>
+      <Stack gap="sm">
+        <Group justify="space-between">
+          <Title order={2}>Calorie Tracking</Title>
+          <Button
+            variant="light"
+            size="xs"
+            onClick={() => setShowDetails(!showDetails)}
+          >
+            {showDetails ? 'Hide Details' : 'Show Details'}
+          </Button>
+        </Group>
+
+        {/* Group and member selection */}
+        {groups.length > 0 && (
+          <Stack gap="xs">
+            <Select
+              placeholder="Select group"
+              value={selectedGroup}
+              onChange={setSelectedGroup}
+              data={groups.map((g) => ({
+                value: g.id.toString(),
+                label: g.name,
+              }))}
+              style={{ width: '100%' }}
+            />
+            {members.length > 0 && (
+              <Select
+                placeholder="Select member"
+                value={selectedUser}
+                onChange={setSelectedUser}
+                data={members.map((m) => ({
+                  value: m.id.toString(),
+                  label: m.name || m.email,
+                }))}
+                style={{ width: '100%' }}
+              />
+            )}
+          </Stack>
+        )}
+      </Stack>
+
+      {/* Viewing other user indicator */}
+      {isViewingOtherUser && selectedMember && (
+        <Paper p="sm" withBorder style={{ backgroundColor: '#f0f7ff' }}>
+          <Text size="sm" c="blue" fw={500}>
+            Viewing calories for: {selectedMember.name || selectedMember.email}
+          </Text>
+        </Paper>
+      )}
 
       {/* Date navigation */}
       <Paper p="md" withBorder>
@@ -895,24 +1012,26 @@ export default function CalorieTrackingPage() {
         </Paper>
       )}
 
-      {/* Add meal buttons */}
-      <Group>
-        <Button
-          leftSection={<IconPlus size={16} />}
-          onClick={openAddMealModal}
-          variant="light"
-        >
-          Add Meal
-        </Button>
-        <Button
-          leftSection={<IconTemplate size={16} />}
-          onClick={openTemplateModal}
-          variant="light"
-          color="teal"
-        >
-          Add from Template
-        </Button>
-      </Group>
+      {/* Add meal buttons - only show when viewing own data */}
+      {!isViewingOtherUser && (
+        <Group>
+          <Button
+            leftSection={<IconPlus size={16} />}
+            onClick={openAddMealModal}
+            variant="light"
+          >
+            Add Meal
+          </Button>
+          <Button
+            leftSection={<IconTemplate size={16} />}
+            onClick={openTemplateModal}
+            variant="light"
+            color="teal"
+          >
+            Add from Template
+          </Button>
+        </Group>
+      )}
 
       {/* Meals list */}
       {loading ? (
@@ -933,22 +1052,24 @@ export default function CalorieTrackingPage() {
                   <Text fw={500} size="lg">
                     {meal.name}
                   </Text>
-                  <Group gap="xs">
-                    <ActionIcon
-                      onClick={() => openEditMealModal(meal)}
-                      variant="subtle"
-                      color="blue"
-                    >
-                      <IconEdit size={18} />
-                    </ActionIcon>
-                    <ActionIcon
-                      onClick={() => handleDeleteMeal(meal.id)}
-                      variant="subtle"
-                      color="red"
-                    >
-                      <IconTrash size={18} />
-                    </ActionIcon>
-                  </Group>
+                  {!isViewingOtherUser && (
+                    <Group gap="xs">
+                      <ActionIcon
+                        onClick={() => openEditMealModal(meal)}
+                        variant="subtle"
+                        color="blue"
+                      >
+                        <IconEdit size={18} />
+                      </ActionIcon>
+                      <ActionIcon
+                        onClick={() => handleDeleteMeal(meal.id)}
+                        variant="subtle"
+                        color="red"
+                      >
+                        <IconTrash size={18} />
+                      </ActionIcon>
+                    </Group>
+                  )}
                 </Group>
 
                 {/* Meal totals */}
@@ -1024,58 +1145,62 @@ export default function CalorieTrackingPage() {
                             </Text>
                           )}
                         </div>
-                        <Group gap={4}>
-                          <ActionIcon
-                            onClick={() => openEditFoodModal(meal.id, foodItem)}
-                            variant="subtle"
-                            color="blue"
-                            size="sm"
-                          >
-                            <IconEdit size={14} />
-                          </ActionIcon>
-                          <ActionIcon
-                            onClick={() => handleRemoveFoodFromMeal(meal.id, foodItem.id)}
-                            variant="subtle"
-                            color="red"
-                            size="sm"
-                          >
-                            <IconTrash size={14} />
-                          </ActionIcon>
-                        </Group>
+                        {!isViewingOtherUser && (
+                          <Group gap={4}>
+                            <ActionIcon
+                              onClick={() => openEditFoodModal(meal.id, foodItem)}
+                              variant="subtle"
+                              color="blue"
+                              size="sm"
+                            >
+                              <IconEdit size={14} />
+                            </ActionIcon>
+                            <ActionIcon
+                              onClick={() => handleRemoveFoodFromMeal(meal.id, foodItem.id)}
+                              variant="subtle"
+                              color="red"
+                              size="sm"
+                            >
+                              <IconTrash size={14} />
+                            </ActionIcon>
+                          </Group>
+                        )}
                       </Group>
                     );
                   })}
                 </Stack>
               )}
 
-              <Group grow>
-                <Button
-                  leftSection={<IconPlus size={14} />}
-                  onClick={() => openAddFoodModal(meal.id)}
-                  variant="light"
-                  size="xs"
-                >
-                  Add Food
-                </Button>
-                <Button
-                  leftSection={<IconTemplate size={14} />}
-                  onClick={() => openAddTemplateToMealModal(meal.id)}
-                  variant="light"
-                  size="xs"
-                  color="teal"
-                >
-                  Template
-                </Button>
-                <Button
-                  leftSection={<IconChefHat size={14} />}
-                  onClick={() => openAddRecipeToMealModal(meal.id)}
-                  variant="light"
-                  size="xs"
-                  color="grape"
-                >
-                  Recipe
-                </Button>
-              </Group>
+              {!isViewingOtherUser && (
+                <Group grow>
+                  <Button
+                    leftSection={<IconPlus size={14} />}
+                    onClick={() => openAddFoodModal(meal.id)}
+                    variant="light"
+                    size="xs"
+                  >
+                    Add Food
+                  </Button>
+                  <Button
+                    leftSection={<IconTemplate size={14} />}
+                    onClick={() => openAddTemplateToMealModal(meal.id)}
+                    variant="light"
+                    size="xs"
+                    color="teal"
+                  >
+                    Template
+                  </Button>
+                  <Button
+                    leftSection={<IconChefHat size={14} />}
+                    onClick={() => openAddRecipeToMealModal(meal.id)}
+                    variant="light"
+                    size="xs"
+                    color="grape"
+                  >
+                    Recipe
+                  </Button>
+                </Group>
+              )}
               </Paper>
             );
           })}

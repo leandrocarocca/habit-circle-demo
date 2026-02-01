@@ -12,6 +12,8 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const date = searchParams.get('date');
+    const targetUserId = searchParams.get('user_id') || session.user.id;
+    const groupId = searchParams.get('group_id');
 
     if (!date) {
       return NextResponse.json(
@@ -21,6 +23,30 @@ export async function GET(request: NextRequest) {
     }
 
     const pool = new Pool({ connectionString: process.env.POSTGRES_URL });
+
+    // If viewing another user's meals, verify they're in the same group
+    if (targetUserId !== session.user.id) {
+      if (!groupId) {
+        return NextResponse.json(
+          { error: "Group ID required to view other users' meals" },
+          { status: 400 }
+        );
+      }
+
+      const groupCheck = await pool.query(
+        `SELECT 1 FROM group_memberships gm1
+         INNER JOIN group_memberships gm2 ON gm1.group_id = gm2.group_id
+         WHERE gm1.user_id = $1 AND gm2.user_id = $2 AND gm1.group_id = $3`,
+        [session.user.id, targetUserId, groupId]
+      );
+
+      if (groupCheck.rows.length === 0) {
+        return NextResponse.json(
+          { error: "You can only view meals of users in your group" },
+          { status: 403 }
+        );
+      }
+    }
 
     const result = await pool.query(
       `SELECT
@@ -57,7 +83,7 @@ export async function GET(request: NextRequest) {
       WHERE m.user_id = $1 AND m.date = $2
       GROUP BY m.id, m.user_id, m.date, m.name, m.created_at, m.updated_at
       ORDER BY m.created_at`,
-      [session.user.id, date]
+      [targetUserId, date]
     );
 
     return NextResponse.json(result.rows);
