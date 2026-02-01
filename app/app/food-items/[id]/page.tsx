@@ -18,7 +18,7 @@ import {
   FileButton,
   Box,
 } from '@mantine/core';
-import { IconTrash, IconPlus, IconArrowLeft, IconPhoto, IconX } from '@tabler/icons-react';
+import { IconTrash, IconPlus, IconArrowLeft, IconPhoto, IconX, IconScan } from '@tabler/icons-react';
 import { useRouter, useParams } from 'next/navigation';
 import { notifications } from '@mantine/notifications';
 
@@ -80,6 +80,7 @@ export default function FoodItemDetailPage() {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
 
   const [formData, setFormData] = useState<FoodItem>({
     name: '',
@@ -249,6 +250,72 @@ export default function FoodItemDetailPage() {
     setFormData({ ...formData, image_url: undefined });
   };
 
+  const handleScanNutritionLabel = async (file: File | null) => {
+    if (!file) return;
+
+    try {
+      setAnalyzing(true);
+
+      // Convert file to base64
+      const reader = new FileReader();
+      const base64Promise = new Promise<string>((resolve, reject) => {
+        reader.onload = () => {
+          const result = reader.result as string;
+          // Remove the data URL prefix (e.g., "data:image/jpeg;base64,")
+          const base64 = result.split(',')[1];
+          resolve(base64);
+        };
+        reader.onerror = reject;
+      });
+      reader.readAsDataURL(file);
+
+      const base64 = await base64Promise;
+      const mediaType = file.type as 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif';
+
+      const response = await fetch('/api/analyze-nutrition', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          image_base64: base64,
+          media_type: mediaType,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to analyze nutrition label');
+      }
+
+      const nutritionData = await response.json();
+
+      // Update form with extracted data
+      setFormData((prev) => ({
+        ...prev,
+        name: nutritionData.name || prev.name,
+        brand: nutritionData.brand || prev.brand,
+        calories_per_100g: nutritionData.calories_per_100g ?? prev.calories_per_100g,
+        protein_per_100g: nutritionData.protein_per_100g ?? prev.protein_per_100g,
+        fat_per_100g: nutritionData.fat_per_100g ?? prev.fat_per_100g,
+        carbs_per_100g: nutritionData.carbs_per_100g ?? prev.carbs_per_100g,
+        sugar_per_100g: nutritionData.sugar_per_100g ?? prev.sugar_per_100g,
+      }));
+
+      notifications.show({
+        title: 'Success',
+        message: 'Nutrition info extracted from label',
+        color: 'green',
+      });
+    } catch (error: any) {
+      notifications.show({
+        title: 'Error',
+        message: error.message || 'Failed to analyze nutrition label',
+        color: 'red',
+      });
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
   const addPortion = () => {
     setFormData({
       ...formData,
@@ -381,6 +448,29 @@ export default function FoodItemDetailPage() {
           </Box>
 
           <Divider label="Nutrition per 100g" labelPosition="center" />
+
+          <Box>
+            <FileButton
+              onChange={handleScanNutritionLabel}
+              accept="image/png,image/jpeg,image/webp,image/gif"
+            >
+              {(props) => (
+                <Button
+                  {...props}
+                  variant="light"
+                  color="teal"
+                  leftSection={<IconScan size={16} />}
+                  loading={analyzing}
+                  fullWidth
+                >
+                  {analyzing ? 'Analyzing...' : 'Scan Nutrition Label'}
+                </Button>
+              )}
+            </FileButton>
+            <Text size="xs" c="dimmed" mt="xs">
+              Take a photo of a nutrition label to auto-fill the values below
+            </Text>
+          </Box>
 
           <Group grow>
             <NumberInput

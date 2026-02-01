@@ -11,6 +11,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.72.1",
     "@auth/pg-adapter": "^1.11.1",
     "@mantine/core": "^8.3.9",
     "@mantine/dates": "^8.3.9",
