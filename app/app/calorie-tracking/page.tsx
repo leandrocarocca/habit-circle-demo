@@ -16,6 +16,8 @@ import {
   Select,
   NumberInput,
   Divider,
+  SegmentedControl,
+  ScrollArea,
 } from '@mantine/core';
 import {
   IconChevronLeft,
@@ -44,6 +46,7 @@ interface FoodItem {
   sugar_per_100g: number;
   calories_per_100g: number;
   portions: Portion[];
+  created_at?: string;
 }
 
 interface MealFoodItem {
@@ -172,6 +175,7 @@ export default function CalorieTrackingPage() {
   const [selectedFoodItem, setSelectedFoodItem] = useState<FoodItem | null>(null);
   const [selectedPortionType, setSelectedPortionType] = useState<string>('');
   const [portionCount, setPortionCount] = useState<number>(1);
+  const [foodViewMode, setFoodViewMode] = useState<'recent' | 'category'>('recent');
 
   // Format date as YYYY-MM-DD in local timezone
   const formatDate = (date: Date) => {
@@ -359,6 +363,7 @@ export default function CalorieTrackingPage() {
     setSelectedFoodItem(null);
     setSelectedPortionType('');
     setPortionCount(1);
+    setFoodViewMode('recent');
 
     // Load food items
     try {
@@ -1124,45 +1129,143 @@ export default function CalorieTrackingPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
-              <Select
-                placeholder="Filter by category"
-                data={CATEGORIES}
-                value={categoryFilter}
-                onChange={(value) => setCategoryFilter(value)}
-                clearable
-              />
-              <Accordion>
-                {Object.entries(groupedFoodItems).map(([category, items]) => (
-                  <Accordion.Item key={category} value={category}>
-                    <Accordion.Control>
-                      {getCategoryLabel(category)} ({items.length})
-                    </Accordion.Control>
-                    <Accordion.Panel>
-                      <Stack gap="xs">
-                        {items.map((item) => (
-                          <Card
-                            key={item.id}
-                            padding="sm"
-                            withBorder
-                            style={{ cursor: 'pointer' }}
-                            onClick={() => setSelectedFoodItem(item)}
-                          >
-                            <Text fw={500}>{item.name}</Text>
-                            {item.brand && (
-                              <Text size="xs" c="dimmed">
-                                {item.brand}
-                              </Text>
-                            )}
+
+              {/* Show search results directly when searching */}
+              {searchQuery ? (
+                <ScrollArea h={400}>
+                  <Stack gap="xs">
+                    {filteredFoodItems.length === 0 ? (
+                      <Text c="dimmed" ta="center" py="md">
+                        No food items found matching "{searchQuery}"
+                      </Text>
+                    ) : (
+                      filteredFoodItems.map((item) => (
+                        <Card
+                          key={item.id}
+                          padding="sm"
+                          withBorder
+                          style={{ cursor: 'pointer' }}
+                          onClick={() => setSelectedFoodItem(item)}
+                        >
+                          <Group justify="space-between">
+                            <div>
+                              <Text fw={500}>{item.name}</Text>
+                              {item.brand && (
+                                <Text size="xs" c="dimmed">
+                                  {item.brand}
+                                </Text>
+                              )}
+                            </div>
                             <Text size="sm" c="dimmed">
-                              {item.calories_per_100g} cal per 100g
+                              {item.calories_per_100g} cal
                             </Text>
-                          </Card>
-                        ))}
+                          </Group>
+                        </Card>
+                      ))
+                    )}
+                  </Stack>
+                </ScrollArea>
+              ) : (
+                <>
+                  {/* View mode toggle when not searching */}
+                  <SegmentedControl
+                    value={foodViewMode}
+                    onChange={(value) => setFoodViewMode(value as 'recent' | 'category')}
+                    data={[
+                      { label: 'Recent', value: 'recent' },
+                      { label: 'By Category', value: 'category' },
+                    ]}
+                    fullWidth
+                  />
+
+                  {foodViewMode === 'recent' ? (
+                    <ScrollArea h={350}>
+                      <Stack gap="xs">
+                        {foodItems.length === 0 ? (
+                          <Text c="dimmed" ta="center" py="md">
+                            No food items yet. Create some in the Food Items page.
+                          </Text>
+                        ) : (
+                          // Show most recent items first
+                          [...foodItems]
+                            .sort((a, b) => {
+                              if (!a.created_at || !b.created_at) return 0;
+                              return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+                            })
+                            .slice(0, 20)
+                            .map((item) => (
+                            <Card
+                              key={item.id}
+                              padding="sm"
+                              withBorder
+                              style={{ cursor: 'pointer' }}
+                              onClick={() => setSelectedFoodItem(item)}
+                            >
+                              <Group justify="space-between">
+                                <div>
+                                  <Text fw={500}>{item.name}</Text>
+                                  {item.brand && (
+                                    <Text size="xs" c="dimmed">
+                                      {item.brand}
+                                    </Text>
+                                  )}
+                                </div>
+                                <Text size="sm" c="dimmed">
+                                  {item.calories_per_100g} cal
+                                </Text>
+                              </Group>
+                            </Card>
+                          ))
+                        )}
                       </Stack>
-                    </Accordion.Panel>
-                  </Accordion.Item>
-                ))}
-              </Accordion>
+                    </ScrollArea>
+                  ) : (
+                    <>
+                      <Select
+                        placeholder="Filter by category"
+                        data={CATEGORIES}
+                        value={categoryFilter}
+                        onChange={(value) => setCategoryFilter(value)}
+                        clearable
+                      />
+                      <ScrollArea h={300}>
+                        <Accordion>
+                          {Object.entries(groupedFoodItems).map(([category, items]) => (
+                            <Accordion.Item key={category} value={category}>
+                              <Accordion.Control>
+                                {getCategoryLabel(category)} ({items.length})
+                              </Accordion.Control>
+                              <Accordion.Panel>
+                                <Stack gap="xs">
+                                  {items.map((item) => (
+                                    <Card
+                                      key={item.id}
+                                      padding="sm"
+                                      withBorder
+                                      style={{ cursor: 'pointer' }}
+                                      onClick={() => setSelectedFoodItem(item)}
+                                    >
+                                      <Text fw={500}>{item.name}</Text>
+                                      {item.brand && (
+                                        <Text size="xs" c="dimmed">
+                                          {item.brand}
+                                        </Text>
+                                      )}
+                                      <Text size="sm" c="dimmed">
+                                        {item.calories_per_100g} cal per 100g
+                                      </Text>
+                                    </Card>
+                                  ))}
+                                </Stack>
+                              </Accordion.Panel>
+                            </Accordion.Item>
+                          ))}
+                        </Accordion>
+                      </ScrollArea>
+                    </>
+                  )}
+                </>
+              )}
             </>
           ) : (
             <>
