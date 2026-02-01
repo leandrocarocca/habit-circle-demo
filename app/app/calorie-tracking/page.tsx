@@ -180,6 +180,9 @@ export default function CalorieTrackingPage() {
 
   // Recipe state
   const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [recipeModalOpened, setRecipeModalOpened] = useState(false);
+  const [newMealRecipe, setNewMealRecipe] = useState<Recipe | null>(null);
+  const [newMealRecipePortions, setNewMealRecipePortions] = useState<number>(1);
   const [addRecipeToMealModalOpened, setAddRecipeToMealModalOpened] = useState(false);
   const [selectedMealForRecipe, setSelectedMealForRecipe] = useState<number | null>(null);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
@@ -688,6 +691,65 @@ export default function CalorieTrackingPage() {
     }
   };
 
+  const openRecipeModal = async () => {
+    setNewMealRecipe(null);
+    setNewMealRecipePortions(1);
+    try {
+      const response = await fetch('/api/recipes');
+      if (!response.ok) {
+        throw new Error('Failed to load recipes');
+      }
+      const data = await response.json();
+      setRecipes(data);
+      setRecipeModalOpened(true);
+    } catch (error) {
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to load recipes',
+        color: 'red',
+      });
+    }
+  };
+
+  const handleAddFromRecipe = async () => {
+    if (!newMealRecipe) return;
+
+    try {
+      const dateStr = formatDate(currentDate);
+      const response = await fetch('/api/meals/from-recipe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recipe_id: newMealRecipe.id,
+          date: dateStr,
+          portions: newMealRecipePortions,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create meal from recipe');
+      }
+
+      const newMeal = await response.json();
+      setMeals([...meals, newMeal]);
+      setRecipeModalOpened(false);
+      setNewMealRecipe(null);
+      setNewMealRecipePortions(1);
+
+      notifications.show({
+        title: 'Success',
+        message: `Meal added from recipe (${newMealRecipePortions} portion${newMealRecipePortions !== 1 ? 's' : ''})`,
+        color: 'green',
+      });
+    } catch (error) {
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to add meal from recipe',
+        color: 'red',
+      });
+    }
+  };
+
   const openAddTemplateToMealModal = async (mealId: number) => {
     setSelectedMealForTemplate(mealId);
     try {
@@ -1001,59 +1063,34 @@ export default function CalorieTrackingPage() {
           <Paper p="md" withBorder style={{ backgroundColor: '#f8f9fa' }}>
             <Stack gap="md">
               <div>
-                <Text size="xl" fw={700} ta="center" c="blue">
-                  {Math.round(dayTotals.calories)} calories
-                </Text>
-                <Text size="xs" c="dimmed" ta="center">
-                  {currentCalorieGoal ? `of ${currentCalorieGoal} goal` : 'Total for the day'}
-                </Text>
-              </div>
-
-              {/* Remaining calories and protein */}
-              {(remainingCalories !== null || remainingProtein !== null) && (
-                <Group justify="center" gap="xl">
+                <Group justify="center" gap="xs">
+                  <Text size="xl" fw={700} c="blue">
+                    {Math.round(dayTotals.calories)} calories
+                  </Text>
                   {remainingCalories !== null && (
-                    <div style={{ textAlign: 'center' }}>
-                      <Text
-                        size="lg"
-                        fw={700}
-                        c={remainingCalories >= 0 ? 'green' : 'red'}
-                      >
-                        {remainingCalories >= 0
-                          ? `${Math.round(remainingCalories)} left`
-                          : `${Math.round(Math.abs(remainingCalories))} over`}
-                      </Text>
-                      <Text size="xs" c="dimmed">
-                        Remaining Calories
-                      </Text>
-                    </div>
-                  )}
-                  {remainingProtein !== null && (
-                    <div style={{ textAlign: 'center' }}>
-                      <Text
-                        size="lg"
-                        fw={700}
-                        c={remainingProtein <= 0 ? 'green' : 'orange'}
-                      >
-                        {remainingProtein <= 0
-                          ? `${Math.round(Math.abs(remainingProtein))}g over`
-                          : `${Math.round(remainingProtein)}g left`}
-                      </Text>
-                      <Text size="xs" c="dimmed">
-                        Remaining Protein
-                      </Text>
-                    </div>
+                    <Text size="xl" fw={700} c={remainingCalories >= 0 ? 'green' : 'red'}>
+                      ({remainingCalories >= 0 ? `${Math.round(remainingCalories)} remaining` : '-'})
+                    </Text>
                   )}
                 </Group>
-              )}
-
+                <Text size="xs" c="dimmed" ta="center">
+                  Total for the day
+                </Text>
+              </div>
               <Group justify="space-around">
                 <div style={{ textAlign: 'center' }}>
-                  <Text size="lg" fw={600} c="blue">
-                    {Math.round(dayTotals.protein)}g
-                  </Text>
+                  <Group gap={4} justify="center">
+                    <Text size="lg" fw={600} c="blue">
+                      {Math.round(dayTotals.protein)}g
+                    </Text>
+                    {remainingProtein !== null && (
+                      <Text size="sm" fw={500} c={remainingProtein <= 0 ? 'green' : 'green'}>
+                        ({remainingProtein <= 0 ? '0' : Math.round(remainingProtein)}g remaining)
+                      </Text>
+                    )}
+                  </Group>
                   <Text size="xs" c="dimmed">
-                    Protein{currentProteinGoal ? ` / ${currentProteinGoal}g` : ''}
+                    Protein
                   </Text>
                 </div>
                 <div style={{ textAlign: 'center' }}>
@@ -1103,6 +1140,14 @@ export default function CalorieTrackingPage() {
             color="teal"
           >
             Add from Template
+          </Button>
+          <Button
+            leftSection={<IconChefHat size={16} />}
+            onClick={openRecipeModal}
+            variant="light"
+            color="grape"
+          >
+            Add from Recipe
           </Button>
         </Group>
       )}
@@ -1559,6 +1604,96 @@ export default function CalorieTrackingPage() {
               Cancel
             </Button>
           </Group>
+        </Stack>
+      </Modal>
+
+      {/* Add from recipe modal */}
+      <Modal
+        opened={recipeModalOpened}
+        onClose={() => {
+          setRecipeModalOpened(false);
+          setNewMealRecipe(null);
+          setNewMealRecipePortions(1);
+        }}
+        title="Add Meal from Recipe"
+        size="md"
+      >
+        <Stack gap="md">
+          {!newMealRecipe ? (
+            <>
+              {recipes.length === 0 ? (
+                <Text c="dimmed" ta="center">
+                  No recipes found. Create recipes in the Recipes page.
+                </Text>
+              ) : (
+                recipes.map((recipe) => (
+                  <Card
+                    key={recipe.id}
+                    padding="sm"
+                    withBorder
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => setNewMealRecipe(recipe)}
+                  >
+                    <Group justify="space-between">
+                      <div>
+                        <Text fw={500}>{recipe.name}</Text>
+                        <Text size="xs" c="dimmed">
+                          Makes {recipe.portions_yield} portion{recipe.portions_yield !== 1 ? 's' : ''} •{' '}
+                          {recipe.ingredients.length} ingredient{recipe.ingredients.length !== 1 ? 's' : ''}
+                        </Text>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <Text size="sm" c="blue" fw={500}>
+                          {Math.round(calculateRecipeCaloriesPerPortion(recipe))} cal
+                        </Text>
+                        <Text size="xs" c="dimmed">per portion</Text>
+                      </div>
+                    </Group>
+                  </Card>
+                ))
+              )}
+              <Group justify="flex-end">
+                <Button variant="subtle" onClick={() => setRecipeModalOpened(false)}>
+                  Cancel
+                </Button>
+              </Group>
+            </>
+          ) : (
+            <>
+              <div>
+                <Text fw={500} size="lg">{newMealRecipe.name}</Text>
+                <Text size="sm" c="dimmed">
+                  Makes {newMealRecipe.portions_yield} portion{newMealRecipe.portions_yield !== 1 ? 's' : ''} •{' '}
+                  {Math.round(calculateRecipeCaloriesPerPortion(newMealRecipe))} cal per portion
+                </Text>
+              </div>
+              <Divider />
+              <NumberInput
+                label="Number of Portions"
+                description={`Adding ${newMealRecipePortions} portion${newMealRecipePortions !== 1 ? 's' : ''} = ${Math.round(calculateRecipeCaloriesPerPortion(newMealRecipe) * newMealRecipePortions)} calories`}
+                value={newMealRecipePortions}
+                onChange={(value) => setNewMealRecipePortions(Number(value) || 1)}
+                min={0.25}
+                max={newMealRecipe.portions_yield * 10}
+                step={0.25}
+                decimalScale={2}
+              />
+              <Group justify="flex-end">
+                <Button
+                  variant="subtle"
+                  onClick={() => {
+                    setNewMealRecipe(null);
+                    setNewMealRecipePortions(1);
+                  }}
+                >
+                  Back
+                </Button>
+                <Button onClick={handleAddFromRecipe} color="grape">
+                  Add Meal
+                </Button>
+              </Group>
+            </>
+          )}
         </Stack>
       </Modal>
 
