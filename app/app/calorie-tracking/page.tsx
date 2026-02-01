@@ -28,6 +28,7 @@ import {
   IconEdit,
   IconTemplate,
   IconChefHat,
+  IconSparkles,
 } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 
@@ -205,6 +206,14 @@ export default function CalorieTrackingPage() {
   const [selectedPortionType, setSelectedPortionType] = useState<string>('');
   const [portionCount, setPortionCount] = useState<number>(1);
   const [foodViewMode, setFoodViewMode] = useState<'recent' | 'category'>('recent');
+
+  // AI meal generation state
+  const [generateModalOpened, setGenerateModalOpened] = useState(false);
+  const [generateMinProtein, setGenerateMinProtein] = useState<number | ''>(150);
+  const [generateCalorieMin, setGenerateCalorieMin] = useState<number | ''>(1800);
+  const [generateCalorieMax, setGenerateCalorieMax] = useState<number | ''>(2200);
+  const [generateNumMeals, setGenerateNumMeals] = useState<number | ''>(4);
+  const [generating, setGenerating] = useState(false);
 
   // Format date as YYYY-MM-DD in local timezone
   const formatDate = (date: Date) => {
@@ -750,6 +759,56 @@ export default function CalorieTrackingPage() {
     }
   };
 
+  const handleGenerateMeals = async () => {
+    if (!generateMinProtein || !generateCalorieMin || !generateCalorieMax || !generateNumMeals) {
+      notifications.show({
+        title: 'Error',
+        message: 'Please fill in all fields',
+        color: 'red',
+      });
+      return;
+    }
+
+    setGenerating(true);
+    try {
+      const dateStr = formatDate(currentDate);
+      const response = await fetch('/api/generate-meals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          min_protein: generateMinProtein,
+          calorie_min: generateCalorieMin,
+          calorie_max: generateCalorieMax,
+          num_meals: generateNumMeals,
+          date: dateStr,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to generate meals');
+      }
+
+      const data = await response.json();
+      setMeals([...meals, ...data.meals]);
+      setGenerateModalOpened(false);
+
+      notifications.show({
+        title: 'Meals Generated',
+        message: `Created ${data.meals.length} meals with ~${data.summary.total_calories} calories and ~${data.summary.total_protein}g protein`,
+        color: 'green',
+      });
+    } catch (error) {
+      notifications.show({
+        title: 'Error',
+        message: error instanceof Error ? error.message : 'Failed to generate meals',
+        color: 'red',
+      });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   const openAddTemplateToMealModal = async (mealId: number) => {
     setSelectedMealForTemplate(mealId);
     try {
@@ -1148,6 +1207,14 @@ export default function CalorieTrackingPage() {
             color="grape"
           >
             Add from Recipe
+          </Button>
+          <Button
+            leftSection={<IconSparkles size={16} />}
+            onClick={() => setGenerateModalOpened(true)}
+            variant="light"
+            color="violet"
+          >
+            Generate with AI
           </Button>
         </Group>
       )}
@@ -1901,6 +1968,68 @@ export default function CalorieTrackingPage() {
               </Group>
             </>
           )}
+        </Stack>
+      </Modal>
+
+      {/* Generate meals with AI modal */}
+      <Modal
+        opened={generateModalOpened}
+        onClose={() => setGenerateModalOpened(false)}
+        title="Generate Meals with AI"
+        size="md"
+      >
+        <Stack gap="md">
+          <Text size="sm" c="dimmed">
+            Generate a complete day of meals using AI. Food items will be based on products available at Willys.se (Swedish grocery store). New food items will be automatically added to your database.
+          </Text>
+          <NumberInput
+            label="Minimum Protein"
+            description="Minimum grams of protein for the day"
+            value={generateMinProtein}
+            onChange={(value) => setGenerateMinProtein(value === '' ? '' : Number(value))}
+            min={50}
+            max={300}
+            suffix=" g"
+          />
+          <Group grow>
+            <NumberInput
+              label="Min Calories"
+              value={generateCalorieMin}
+              onChange={(value) => setGenerateCalorieMin(value === '' ? '' : Number(value))}
+              min={1000}
+              max={5000}
+              suffix=" kcal"
+            />
+            <NumberInput
+              label="Max Calories"
+              value={generateCalorieMax}
+              onChange={(value) => setGenerateCalorieMax(value === '' ? '' : Number(value))}
+              min={1000}
+              max={5000}
+              suffix=" kcal"
+            />
+          </Group>
+          <NumberInput
+            label="Number of Meals"
+            description="How many meals to generate"
+            value={generateNumMeals}
+            onChange={(value) => setGenerateNumMeals(value === '' ? '' : Number(value))}
+            min={1}
+            max={8}
+          />
+          <Group justify="flex-end">
+            <Button variant="subtle" onClick={() => setGenerateModalOpened(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleGenerateMeals}
+              loading={generating}
+              color="violet"
+              leftSection={<IconSparkles size={16} />}
+            >
+              Generate Meals
+            </Button>
+          </Group>
         </Stack>
       </Modal>
     </Stack>
