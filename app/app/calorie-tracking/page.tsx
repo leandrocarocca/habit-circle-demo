@@ -24,6 +24,7 @@ import {
   IconTrash,
   IconEdit,
   IconTemplate,
+  IconChefHat,
 } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 
@@ -88,6 +89,23 @@ interface MealTemplate {
   items: TemplateItem[];
 }
 
+interface RecipeIngredient {
+  id: number;
+  food_item_id: number;
+  food_item_name: string;
+  portion_type: string;
+  portion_count: number;
+  portion_grams: number;
+  calories_per_100g: number;
+}
+
+interface Recipe {
+  id: number;
+  name: string;
+  portions_yield: number;
+  ingredients: RecipeIngredient[];
+}
+
 const CATEGORIES = [
   { value: 'meat', label: 'Meat' },
   { value: 'chicken', label: 'Chicken' },
@@ -131,6 +149,13 @@ export default function CalorieTrackingPage() {
   const [templates, setTemplates] = useState<MealTemplate[]>([]);
   const [addTemplateToMealModalOpened, setAddTemplateToMealModalOpened] = useState(false);
   const [selectedMealForTemplate, setSelectedMealForTemplate] = useState<number | null>(null);
+
+  // Recipe state
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [addRecipeToMealModalOpened, setAddRecipeToMealModalOpened] = useState(false);
+  const [selectedMealForRecipe, setSelectedMealForRecipe] = useState<number | null>(null);
+  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
+  const [recipePortions, setRecipePortions] = useState<number>(1);
 
   // Edit food item state
   const [editFoodModalOpened, setEditFoodModalOpened] = useState(false);
@@ -612,6 +637,77 @@ export default function CalorieTrackingPage() {
     }, 0);
   };
 
+  // Recipe handlers
+  const openAddRecipeToMealModal = async (mealId: number) => {
+    setSelectedMealForRecipe(mealId);
+    setSelectedRecipe(null);
+    setRecipePortions(1);
+    try {
+      const response = await fetch('/api/recipes');
+      if (!response.ok) {
+        throw new Error('Failed to load recipes');
+      }
+      const data = await response.json();
+      setRecipes(data);
+      setAddRecipeToMealModalOpened(true);
+    } catch (error) {
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to load recipes',
+        color: 'red',
+      });
+    }
+  };
+
+  const handleAddRecipeToMeal = async () => {
+    if (!selectedMealForRecipe || !selectedRecipe) return;
+
+    try {
+      const response = await fetch(`/api/meals/${selectedMealForRecipe}/from-recipe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recipe_id: selectedRecipe.id,
+          portions: recipePortions,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to add recipe to meal');
+      }
+
+      await loadMeals();
+      setAddRecipeToMealModalOpened(false);
+      setSelectedMealForRecipe(null);
+      setSelectedRecipe(null);
+      setRecipePortions(1);
+
+      notifications.show({
+        title: 'Success',
+        message: `Added ${recipePortions} portion${recipePortions !== 1 ? 's' : ''} of ${selectedRecipe.name}`,
+        color: 'green',
+      });
+    } catch (error) {
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to add recipe to meal',
+        color: 'red',
+      });
+    }
+  };
+
+  // Calculate recipe calories (total)
+  const calculateRecipeCalories = (recipe: Recipe) => {
+    return recipe.ingredients.reduce((total, ingredient) => {
+      return total + (ingredient.portion_grams * ingredient.portion_count * ingredient.calories_per_100g) / 100;
+    }, 0);
+  };
+
+  // Calculate per-portion calories
+  const calculateRecipeCaloriesPerPortion = (recipe: Recipe) => {
+    return calculateRecipeCalories(recipe) / recipe.portions_yield;
+  };
+
   // Filter food items
   const filteredFoodItems = foodItems.filter((item) => {
     const matchesSearch =
@@ -942,7 +1038,7 @@ export default function CalorieTrackingPage() {
                   variant="light"
                   size="xs"
                 >
-                  Add Food Item
+                  Add Food
                 </Button>
                 <Button
                   leftSection={<IconTemplate size={14} />}
@@ -951,7 +1047,16 @@ export default function CalorieTrackingPage() {
                   size="xs"
                   color="teal"
                 >
-                  From Template
+                  Template
+                </Button>
+                <Button
+                  leftSection={<IconChefHat size={14} />}
+                  onClick={() => openAddRecipeToMealModal(meal.id)}
+                  variant="light"
+                  size="xs"
+                  color="grape"
+                >
+                  Recipe
                 </Button>
               </Group>
               </Paper>
@@ -1256,6 +1361,100 @@ export default function CalorieTrackingPage() {
                   Cancel
                 </Button>
                 <Button onClick={handleUpdateFoodItem}>Save Changes</Button>
+              </Group>
+            </>
+          )}
+        </Stack>
+      </Modal>
+
+      {/* Add recipe to meal modal */}
+      <Modal
+        opened={addRecipeToMealModalOpened}
+        onClose={() => {
+          setAddRecipeToMealModalOpened(false);
+          setSelectedMealForRecipe(null);
+          setSelectedRecipe(null);
+          setRecipePortions(1);
+        }}
+        title="Add from Recipe"
+        size="md"
+      >
+        <Stack gap="md">
+          {!selectedRecipe ? (
+            <>
+              {recipes.length === 0 ? (
+                <Text c="dimmed" ta="center">
+                  No recipes found. Create recipes in the Recipes page.
+                </Text>
+              ) : (
+                recipes.map((recipe) => (
+                  <Card
+                    key={recipe.id}
+                    padding="sm"
+                    withBorder
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => setSelectedRecipe(recipe)}
+                  >
+                    <Group justify="space-between">
+                      <div>
+                        <Text fw={500}>{recipe.name}</Text>
+                        <Text size="xs" c="dimmed">
+                          Makes {recipe.portions_yield} portion{recipe.portions_yield !== 1 ? 's' : ''} •{' '}
+                          {recipe.ingredients.length} ingredient{recipe.ingredients.length !== 1 ? 's' : ''}
+                        </Text>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <Text size="sm" c="blue" fw={500}>
+                          {Math.round(calculateRecipeCaloriesPerPortion(recipe))} cal
+                        </Text>
+                        <Text size="xs" c="dimmed">per portion</Text>
+                      </div>
+                    </Group>
+                  </Card>
+                ))
+              )}
+              <Group justify="flex-end">
+                <Button variant="subtle" onClick={() => {
+                  setAddRecipeToMealModalOpened(false);
+                  setSelectedMealForRecipe(null);
+                }}>
+                  Cancel
+                </Button>
+              </Group>
+            </>
+          ) : (
+            <>
+              <div>
+                <Text fw={500} size="lg">{selectedRecipe.name}</Text>
+                <Text size="sm" c="dimmed">
+                  Makes {selectedRecipe.portions_yield} portion{selectedRecipe.portions_yield !== 1 ? 's' : ''} •{' '}
+                  {Math.round(calculateRecipeCaloriesPerPortion(selectedRecipe))} cal per portion
+                </Text>
+              </div>
+              <Divider />
+              <NumberInput
+                label="Number of Portions"
+                description={`Adding ${recipePortions} portion${recipePortions !== 1 ? 's' : ''} = ${Math.round(calculateRecipeCaloriesPerPortion(selectedRecipe) * recipePortions)} calories`}
+                value={recipePortions}
+                onChange={(value) => setRecipePortions(Number(value) || 1)}
+                min={0.25}
+                max={selectedRecipe.portions_yield * 10}
+                step={0.25}
+                decimalScale={2}
+              />
+              <Group justify="flex-end">
+                <Button
+                  variant="subtle"
+                  onClick={() => {
+                    setSelectedRecipe(null);
+                    setRecipePortions(1);
+                  }}
+                >
+                  Back
+                </Button>
+                <Button onClick={handleAddRecipeToMeal} color="grape">
+                  Add to Meal
+                </Button>
               </Group>
             </>
           )}

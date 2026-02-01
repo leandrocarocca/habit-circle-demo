@@ -15,6 +15,7 @@ import {
   IconChartBar,
   IconTemplate,
   IconDotsVertical,
+  IconChefHat,
 } from '@tabler/icons-react';
 
 export function AppShellLayout({ children }: { children: React.ReactNode }) {
@@ -36,6 +37,7 @@ export function AppShellLayout({ children }: { children: React.ReactNode }) {
 
   // Items shown in "More" menu on mobile
   const moreNavItems = [
+    { href: '/app/recipes', label: 'Recipes', icon: IconChefHat },
     { href: '/app/calendar', label: 'Calendar', icon: IconCalendar },
     { href: '/app/groups', label: 'Groups', icon: IconUsers },
     { href: '/app/food-items', label: 'Food Items', icon: IconApple },
@@ -106,6 +108,11 @@ export function AppShellLayout({ children }: { children: React.ReactNode }) {
           href="/app/meal-templates"
           label="Meal Templates"
           leftSection={<IconTemplate size={16} />}
+        />
+        <NavLink
+          href="/app/recipes"
+          label="Recipes"
+          leftSection={<IconChefHat size={16} />}
         />
         <NavLink
           href="/app/calorie-tracking"
