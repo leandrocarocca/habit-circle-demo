@@ -8,7 +8,6 @@ import {
   IconHome,
   IconSettings,
   IconLogout,
-  IconClipboardList,
   IconCalendar,
   IconUsers,
   IconApple,
@@ -30,14 +29,13 @@ export function AppShellLayout({ children }: { children: React.ReactNode }) {
   // Main tabs shown in mobile bottom bar
   const mainNavItems = [
     { href: '/app', label: 'Home', icon: IconHome },
-    { href: '/app/logging', label: 'Log', icon: IconClipboardList },
-    { href: '/app/calorie-tracking', label: 'Calories', icon: IconChartBar },
+    { href: '/app/recipes', label: 'Recipes', icon: IconChefHat },
     { href: '/app/meal-templates', label: 'Templates', icon: IconTemplate },
   ];
 
   // Items shown in "More" menu on mobile
   const moreNavItems = [
-    { href: '/app/recipes', label: 'Recipes', icon: IconChefHat },
+    { href: '/app/dashboard', label: 'Dashboard', icon: IconChartBar },
     { href: '/app/calendar', label: 'Calendar', icon: IconCalendar },
     { href: '/app/groups', label: 'Groups', icon: IconUsers },
     { href: '/app/food-items', label: 'Food Items', icon: IconApple },
@@ -85,11 +83,6 @@ export function AppShellLayout({ children }: { children: React.ReactNode }) {
           leftSection={<IconHome size={16} />}
         />
         <NavLink
-          href="/app/logging"
-          label="Logging"
-          leftSection={<IconClipboardList size={16} />}
-        />
-        <NavLink
           href="/app/calendar"
           label="Calendar"
           leftSection={<IconCalendar size={16} />}
@@ -115,8 +108,8 @@ export function AppShellLayout({ children }: { children: React.ReactNode }) {
           leftSection={<IconChefHat size={16} />}
         />
         <NavLink
-          href="/app/calorie-tracking"
-          label="Calorie Tracking"
+          href="/app/dashboard"
+          label="Dashboard"
           leftSection={<IconChartBar size={16} />}
         />
         <NavLink
